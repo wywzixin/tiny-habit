@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tiny Habits - Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #10B981;
+            --color-primary-light: #D1FAE5;
+            --color-accent: #F9A825;
+            --color-text: #44403C;
+            --color-text-secondary: #A8A29E;
+            --color-border: #E7E5E4;
+            --color-card: #FFFFFF;
+            --color-bg: #FAFAF9;
+        }
+        body { font-family: 'Noto Sans SC', sans-serif; -webkit-tap-highlight-color: transparent; transition: background-color 0.3s ease, color 0.3s ease; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid rgba(0,0,0,0.04); }
+        .card-enter { animation: fadeIn 0.4s ease-out forwards; opacity: 0; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .habit-card.completed .habit-title { color: var(--color-text-secondary); text-decoration: line-through; }
+        .habit-card.completed .check-btn { background-color: var(--color-primary); border-color: var(--color-primary); }
+        .check-btn { transition: all 0.2s ease; }
+        .check-btn:active { transform: scale(0.9); }
+
+        /* Celebration Modal */
+        .celebration-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 100;
+            pointer-events: none;
+        }
+        .celebration-modal.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .celebration-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 99;
+            pointer-events: none;
+        }
+        .celebration-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .bounce-animation {
+            animation: bounce 0.6s ease-in-out;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode { background-color: #1a1a1a; color: #e7e5e4; }
+        body.dark-mode .bg-stone-50 { background-color: #1a1a1a !important; }
+        body.dark-mode .bg-white { background-color: #2a2a2a !important; }
+        body.dark-mode .text-stone-700 { color: #e7e5e4 !important; }
+        body.dark-mode .text-stone-800 { color: #e7e5e4 !important; }
+        body.dark-mode .text-stone-600 { color: #a8a29e !important; }
+        body.dark-mode .text-stone-400 { color: #78716c !important; }
+        body.dark-mode .text-stone-500 { color: #a8a29e !important; }
+        body.dark-mode .border-stone-200 { border-color: #3a3a3a !important; }
+        body.dark-mode .glass { background: rgba(42,42,42,0.95) !important; border-top-color: rgba(255,255,255,0.04) !important; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#10B981', light: '#D1FAE5' },
+                        accent: '#F9A825',
+                        stone: { 50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 400: '#a8a29e', 700: '#44403C', 800: '#292524' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-stone-50 text-stone-800 h-screen w-full overflow-hidden flex flex-col">
+
+    <!-- Header -->
+    <header class="px-5 pt-12 pb-3 bg-stone-50 z-20 flex justify-between items-center sticky top-0">
+        <h1 class="text-xl font-bold text-stone-700 tracking-tight">我的配方</h1>
+        <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-stone-200">
+            <i data-lucide="zap" class="w-4 h-4 text-accent fill-accent"></i>
+            <span class="text-sm font-bold text-stone-700" id="actionPoints">420</span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto hide-scrollbar relative px-5 pb-32 pt-4">
+        <!-- Daily Energy -->
+        <div class="mb-6 relative overflow-hidden rounded-[20px] bg-gradient-to-r from-primary to-teal-400 text-white p-6 cursor-pointer active:scale-[0.98] transition-transform" onclick="triggerConfetti()">
+            <div class="absolute -right-4 -top-4 text-white/10"><i data-lucide="sun" class="w-28 h-28"></i></div>
+            <div class="relative z-10">
+                <div class="flex items-center gap-2 mb-3"><span class="bg-white/20 backdrop-blur-md text-xs font-bold px-2.5 py-1 rounded-md">✨ 今日能量</span></div>
+                <div class="text-[15px] font-bold leading-relaxed">每一个微小的开始，都通向伟大的改变。</div>
+            </div>
+        </div>
+
+        <!-- Habits List -->
+        <div class="space-y-4">
+
+            <a href="detail.html" class="block habit-card card-enter" style="animation-delay: 0.05s;">
+                <div class="bg-white p-4 rounded-[20px] border border-stone-200 flex items-center gap-3 active:scale-[0.98] transition-all duration-200">
+                    <div class="w-12 h-12 rounded-[14px] bg-stone-50 flex items-center justify-center text-2xl flex-shrink-0">🛏️</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-medium text-stone-400 mb-0.5">当 <span class="text-stone-600 font-semibold">双脚落地</span> 后</div>
+                        <div class="habit-title text-base font-bold text-stone-700">整理被褥</div>
+                    </div>
+                    <div onclick="event.preventDefault(); toggleCheck(this.closest('.habit-card'))" class="check-btn w-6 h-6 rounded-full border-2 border-stone-200 flex items-center justify-center cursor-pointer flex-shrink-0">
+                        <i data-lucide="check" class="w-3 h-3 text-white stroke-[3px]"></i>
+                    </div>
+                </div>
+            </a>
+
+            <a href="detail.html" class="block habit-card card-enter" style="animation-delay: 0.1s;">
+                <div class="bg-white p-4 rounded-[20px] border border-stone-200 flex items-center gap-3 active:scale-[0.98] transition-all duration-200">
+                    <div class="w-12 h-12 rounded-[14px] bg-blue-50 flex items-center justify-center text-2xl flex-shrink-0">🪥</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-medium text-stone-400 mb-0.5">当 <span class="text-stone-600 font-semibold">刷完牙</span> 后</div>
+                        <div class="habit-title text-base font-bold text-stone-700">用牙线清洁一颗牙</div>
+                    </div>
+                    <div onclick="event.preventDefault(); toggleCheck(this.closest('.habit-card'))" class="check-btn w-6 h-6 rounded-full border-2 border-stone-200 flex items-center justify-center cursor-pointer flex-shrink-0">
+                        <i data-lucide="check" class="w-3 h-3 text-white stroke-[3px]"></i>
+                    </div>
+                </div>
+            </a>
+
+            <a href="detail.html" class="block habit-card card-enter" style="animation-delay: 0.15s;">
+                <div class="bg-white p-4 rounded-[20px] border border-stone-200 flex items-center gap-3 active:scale-[0.98] transition-all duration-200">
+                    <div class="w-12 h-12 rounded-[14px] bg-amber-50 flex items-center justify-center text-2xl flex-shrink-0">☕</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-medium text-stone-400 mb-0.5">当 <span class="text-stone-600 font-semibold">倒好咖啡</span> 后</div>
+                        <div class="habit-title text-base font-bold text-stone-700">做两次深呼吸</div>
+                    </div>
+                    <div onclick="event.preventDefault(); toggleCheck(this.closest('.habit-card'))" class="check-btn w-6 h-6 rounded-full border-2 border-stone-200 flex items-center justify-center cursor-pointer flex-shrink-0">
+                        <i data-lucide="check" class="w-3 h-3 text-white stroke-[3px]"></i>
+                    </div>
+                </div>
+            </a>
+
+            <a href="detail.html" class="block habit-card card-enter" style="animation-delay: 0.2s;">
+                <div class="bg-white p-4 rounded-[20px] border border-stone-200 flex items-center gap-3 active:scale-[0.98] transition-all duration-200">
+                    <div class="w-12 h-12 rounded-[14px] bg-purple-50 flex items-center justify-center text-2xl flex-shrink-0">🌙</div>
+                    <div class="flex-1">
+                        <div class="text-xs font-medium text-stone-400 mb-0.5">当 <span class="text-stone-600 font-semibold">关灯睡觉</span> 后</div>
+                        <div class="habit-title text-base font-bold text-stone-700">想一件开心的事</div>
+                    </div>
+                    <div onclick="event.preventDefault(); toggleCheck(this.closest('.habit-card'))" class="check-btn w-6 h-6 rounded-full border-2 border-stone-200 flex items-center justify-center cursor-pointer flex-shrink-0">
+                        <i data-lucide="check" class="w-3 h-3 text-white stroke-[3px]"></i>
+                    </div>
+                </div>
+            </a>
+
+        </div>
+    </main>
+
+    <!-- Celebration Overlay -->
+    <div id="celebrationOverlay" class="celebration-overlay"></div>
+
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="celebration-modal w-[85%] max-w-sm">
+        <div class="bg-white rounded-[24px] p-6 shadow-2xl">
+            <!-- Icon -->
+            <div class="flex justify-center mb-4">
+                <div class="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center bounce-animation">
+                    <span class="text-4xl">🎉</span>
+                </div>
+            </div>
+
+            <!-- Title -->
+            <h3 class="text-xl font-bold text-stone-700 text-center mb-2">太棒了！</h3>
+            <p class="text-sm text-stone-500 text-center mb-4">+1 行动值</p>
+
+            <!-- Celebration Reminder -->
+            <div class="bg-primary-light rounded-[16px] p-4 mb-3">
+                <div class="flex items-center gap-2 mb-2">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-primary"></i>
+                    <span class="text-xs font-semibold text-primary">记得庆祝</span>
+                </div>
+                <p id="celebrationText" class="text-sm font-semibold text-stone-700">对自己微笑</p>
+            </div>
+
+            <!-- Encouragement -->
+            <p class="text-xs text-center text-stone-400">每一次小小的行动，都在让你变得更好</p>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="glass fixed bottom-0 left-0 right-0 px-6 pt-2 pb-8 z-40">
+        <div class="flex justify-around items-center relative">
+            <a href="home.html" class="flex flex-col items-center gap-1 py-2 flex-1">
+                <i data-lucide="home" class="w-6 h-6 text-primary stroke-[2px]"></i>
+                <span class="text-[10px] font-semibold text-primary">首页</span>
+            </a>
+            <a href="recipes.html" class="flex flex-col items-center gap-1 py-2 opacity-50 flex-1">
+                <i data-lucide="compass" class="w-6 h-6 text-stone-600 stroke-[2px]"></i>
+                <span class="text-[10px] font-medium text-stone-500">发现</span>
+            </a>
+
+            <!-- Center Floating Button -->
+            <div class="flex-1 flex justify-center">
+                <a href="create.html" class="absolute -top-8 w-14 h-14 bg-primary rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+                    <i data-lucide="plus" class="w-7 h-7 text-white stroke-[2.5px]"></i>
+                </a>
+            </div>
+
+            <a href="achievement.html" class="flex flex-col items-center gap-1 py-2 opacity-50 flex-1">
+                <i data-lucide="bar-chart-2" class="w-6 h-6 text-stone-600 stroke-[2px]"></i>
+                <span class="text-[10px] font-medium text-stone-500">统计</span>
+            </a>
+            <a href="profile.html" class="flex flex-col items-center gap-1 py-2 opacity-50 flex-1">
+                <i data-lucide="user" class="w-6 h-6 text-stone-600 stroke-[2px]"></i>
+                <span class="text-[10px] font-medium text-stone-500">我的</span>
+            </a>
+        </div>
+    </nav>
+    <script>
+        lucide.createIcons();
+        let points = 420;
+        let completed = 0;
+        const total = 4;
+
+        // Check for saved dark mode preference
+        const isDarkMode = localStorage.getItem('darkMode') === 'true';
+        if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+        }
+
+        function triggerConfetti() {
+            confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 }, colors: ['#10B981', '#D1FAE5', '#F9A825'] });
+        }
+
+        // Celebration data for each habit
+        const celebrations = {
+            '整理被褥': '对自己微笑',
+            '用牙线清洁一颗牙': '握拳说耶',
+            '做两次深呼吸': '心里说太棒了',
+            '想一件开心的事': '对自己微笑'
+        };
+
+        function showCelebrationModal(habitName) {
+            const modal = document.getElementById('celebrationModal');
+            const overlay = document.getElementById('celebrationOverlay');
+            const celebrationText = document.getElementById('celebrationText');
+
+            // Set celebration text
+            celebrationText.textContent = celebrations[habitName] || '对自己微笑';
+
+            // Show modal and overlay
+            overlay.classList.add('show');
+            modal.classList.add('show');
+
+            // Re-initialize lucide icons for the modal
+            lucide.createIcons();
+
+            // Auto close after 3 seconds
+            setTimeout(() => {
+                overlay.classList.remove('show');
+                modal.classList.remove('show');
+            }, 3000);
+        }
+
+        function toggleCheck(card) {
+            if (!card.classList.contains('completed')) {
+                card.classList.add('completed');
+                completed++;
+                document.getElementById('actionPoints').innerText = ++points;
+                if (navigator.vibrate) navigator.vibrate(10);
+                confetti({ particleCount: 30, spread: 60, origin: { y: 0.7 }, colors: ['#10B981', '#D1FAE5', '#F9A825'] });
+
+                // Get habit name and show celebration modal
+                const habitName = card.querySelector('.habit-title').textContent;
+                setTimeout(() => {
+                    showCelebrationModal(habitName);
+                }, 500);
+            } else {
+                card.classList.remove('completed');
+                completed--;
+                document.getElementById('actionPoints').innerText = --points;
+            }
+        }
+    </script>
+</body>
+</html>

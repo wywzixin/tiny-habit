@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tiny Habits - Detail</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #7DD3A8;
+            --color-primary-light: #D1FAE5;
+            --color-text: #44403C;
+            --color-text-secondary: #A8A29E;
+        }
+        body { font-family: 'Noto Sans SC', sans-serif; -webkit-tap-highlight-color: transparent; transition: background-color 0.3s ease, color 0.3s ease; }
+
+        /* Dark Mode Styles */
+        body.dark-mode { background-color: #1a1a1a; color: #e7e5e4; }
+        body.dark-mode .bg-stone-50 { background-color: #1a1a1a !important; }
+        body.dark-mode .bg-white { background-color: #2a2a2a !important; }
+        body.dark-mode .text-stone-700 { color: #e7e5e4 !important; }
+        body.dark-mode .text-stone-600 { color: #a8a29e !important; }
+        body.dark-mode .text-stone-400 { color: #78716c !important; }
+        body.dark-mode .border-stone-200 { border-color: #3a3a3a !important; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+        .calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; border-radius: 8px; }
+        .calendar-day.header { color: #a8a29e; font-weight: 600; }
+        .calendar-day.today { background-color: #10B981; color: white; font-weight: 700; }
+        .calendar-day.checked { background-color: #D1FAE5; color: #047857; font-weight: 600; }
+        .calendar-day.inactive { color: #e7e5e4; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#7DD3A8', light: '#D1FAE5' },
+                        stone: { 50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 400: '#a8a29e', 600: '#57534e', 700: '#44403C', 800: '#292524' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-stone-50 text-stone-700 h-screen w-full overflow-hidden flex flex-col">
+    <!-- Header -->
+    <header class="px-5 pt-12 pb-3 bg-stone-50 z-20 flex justify-between items-center">
+        <a href="home.html" class="p-1 -ml-1">
+            <i data-lucide="arrow-left" class="w-6 h-6 text-stone-600 stroke-[2px]"></i>
+        </a>
+        <a href="edit.html" class="text-sm font-medium text-stone-400">编辑</a>
+    </header>
+    <main class="flex-1 overflow-y-auto hide-scrollbar px-5 py-4 pb-10 space-y-5">
+        <!-- Title -->
+        <div class="text-center py-4">
+            <h1 class="text-xl font-bold text-stone-700 mb-1">喝一杯水</h1>
+            <p class="text-sm text-stone-400">当 双脚落地 后</p>
+        </div>
+
+        <!-- Calendar -->
+        <div class="bg-white p-5 rounded-[20px] border border-stone-200">
+            <div class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-4">打卡日历</div>
+            <div id="calendar"></div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white p-4 rounded-[16px] border border-stone-200 text-center">
+                <div class="text-[10px] text-stone-400 font-medium mb-1">打卡天数</div>
+                <div class="text-2xl font-bold text-stone-700">42 <span class="text-sm font-normal text-stone-400">天</span></div>
+            </div>
+            <div class="bg-white p-4 rounded-[16px] border border-stone-200 text-center">
+                <div class="text-[10px] text-stone-400 font-medium mb-1">行动值</div>
+                <div class="text-2xl font-bold text-primary">126</div>
+            </div>
+        </div>
+
+        <!-- Recipe Card -->
+        <div class="bg-white p-5 rounded-[20px] border border-stone-200">
+            <div class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-4">配方详情</div>
+            <div class="space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-stone-100 flex items-center justify-center text-lg">🛌</div>
+                    <div>
+                        <div class="text-[10px] text-stone-400 font-medium">锚点</div>
+                        <div class="text-sm font-semibold text-stone-700">当双脚落地后</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-primary-light flex items-center justify-center text-lg">💧</div>
+                    <div>
+                        <div class="text-[10px] text-primary font-medium">微行为</div>
+                        <div class="text-sm font-semibold text-stone-700">喝一杯水</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-stone-100 flex items-center justify-center text-lg">✨</div>
+                    <div>
+                        <div class="text-[10px] text-stone-400 font-medium">庆祝</div>
+                        <div class="text-sm font-semibold text-stone-700">对自己微笑</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Button -->
+        <button class="w-full py-3 text-sm font-medium text-red-400 rounded-[12px] border border-red-100 bg-red-50/50">
+            删除此配方
+        </button>
+    </main>
+    <script>
+        lucide.createIcons();
+
+        // Check for saved dark mode preference
+        const isDarkMode = localStorage.getItem('darkMode') === 'true';
+        if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Calendar rendering
+        function renderCalendar() {
+        const calendar = document.getElementById('calendar');
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+
+        // Sample checked dates (you can replace with actual data)
+        const checkedDates = [1, 3, 5, 8, 10, 12, 15, 18, 20, 22, 25, 28];
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        let html = '<div class="calendar-grid">';
+
+        // Week headers
+        ['日', '一', '二', '三', '四', '五', '六'].forEach(day => {
+            html += `<div class="calendar-day header">${day}</div>`;
+        });
+
+        // Empty cells before first day
+        for (let i = 0; i < firstDay; i++) {
+            html += '<div class="calendar-day inactive"></div>';
+        }
+
+        // Days of month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const isToday = day === today.getDate();
+            const isChecked = checkedDates.includes(day);
+            let className = 'calendar-day';
+            if (isToday) className += ' today';
+            else if (isChecked) className += ' checked';
+            html += `<div class="${className}">${day}</div>`;
+        }
+
+        html += '</div>';
+        calendar.innerHTML = html;
+    }
+
+    renderCalendar();
+    </script>
+</body>
+</html>

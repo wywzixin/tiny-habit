@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tiny Habits - Create</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #10B981;
+            --color-primary-light: #D1FAE5;
+        }
+        body { font-family: 'Noto Sans SC', sans-serif; }
+        body.dark-mode { background-color: #1a1a1a; color: #e7e5e4; }
+        body.dark-mode .bg-stone-50 { background-color: #1a1a1a !important; }
+        body.dark-mode .bg-white { background-color: #2a2a2a !important; }
+        body.dark-mode .text-stone-700 { color: #e7e5e4 !important; }
+        body.dark-mode .text-stone-600 { color: #a8a29e !important; }
+        body.dark-mode .text-stone-400 { color: #78716c !important; }
+        body.dark-mode .border-stone-200 { border-color: #3a3a3a !important; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .input-focus:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(16,185,129,0.15); }
+        .selected-chip { background-color: var(--color-primary-light) !important; border-color: var(--color-primary) !important; color: #047857 !important; }
+        .selected-card { border-color: var(--color-primary) !important; background-color: var(--color-primary-light) !important; }
+        .selected-card .check-circle { background-color: var(--color-primary); border-color: var(--color-primary); }
+        .difficulty-easy { background-color: #D1FAE5; color: #047857; }
+        .difficulty-medium { background-color: #FEF3C7; color: #B45309; }
+        .difficulty-hard { background-color: #FEE2E2; color: #DC2626; }
+        .ai-badge { background: linear-gradient(135deg, #8B5CF6, #EC4899); }
+        .btn-disabled { background-color: #e7e5e4; color: #a8a29e; }
+        .btn-active { background-color: var(--color-primary); color: white; }
+        .section-appear { opacity: 0; transform: translateY(20px); transition: all 0.4s ease; }
+        .section-appear.visible { opacity: 1; transform: translateY(0); }
+        .day-btn.selected { background-color: var(--color-primary); color: white; border-color: var(--color-primary); }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-700 h-screen flex flex-col">
+    <header class="px-5 pt-12 pb-3 bg-stone-50 z-20 flex justify-between items-center flex-shrink-0">
+        <a href="home.html" class="text-stone-400 font-medium text-sm">取消</a>
+        <h1 class="text-base font-bold text-stone-700">新建配方</h1>
+        <div class="w-10"></div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto hide-scrollbar px-5 pb-44">
+        <!-- Section 1: 目标习惯 -->
+        <section class="mb-8">
+            <div class="mb-3">
+                <h2 class="text-lg font-bold text-stone-700 mb-1">🎯 你想养成什么习惯？</h2>
+                <p class="text-sm text-stone-400">输入目标后，AI 会推荐微行为和触发时机</p>
+            </div>
+            <div class="input-focus bg-white p-1 rounded-[14px] border border-stone-200 flex items-center">
+                <div class="w-10 h-10 flex items-center justify-center text-stone-400">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                </div>
+                <input type="text" id="input-goal" oninput="onGoalInput(this.value)" placeholder="例如：多喝水、运动、早起..." class="flex-1 bg-transparent border-none outline-none text-stone-700 font-medium placeholder-stone-300 h-12 text-[15px]">
+                <button onclick="openHabitLibrary()" class="mr-1 px-3 py-2 bg-emerald-500 text-white rounded-xl text-sm font-medium active:scale-95 transition-all flex items-center gap-1">
+                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                    <span>习惯库</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Section 2: AI推荐微行为 -->
+        <section id="behaviorSection" class="mb-8 section-appear visible">
+            <div class="flex items-center gap-2 mb-3">
+                <h2 class="text-lg font-bold text-stone-700">⚡ 选择微行为</h2>
+                <span class="ai-badge text-white text-[10px] font-bold px-2 py-0.5 rounded-full">AI 推荐</span>
+            </div>
+            <p class="text-sm text-stone-400 mb-3">越小越容易坚持，从简单的开始</p>
+            <div id="behaviorList" class="space-y-2 mb-3"></div>
+            <div class="input-focus bg-white p-1 rounded-[12px] border border-stone-200 flex items-center">
+                <div class="w-9 h-9 flex items-center justify-center text-stone-300">
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                </div>
+                <input type="text" id="custom-behavior" oninput="onCustomBehavior(this.value)" placeholder="或自己输入微行为..." class="flex-1 bg-transparent border-none outline-none text-stone-700 font-medium placeholder-stone-300 h-10 text-sm">
+            </div>
+        </section>
+
+        <!-- Section 3: AI推荐锚点 -->
+        <section id="anchorSection" class="mb-8 section-appear visible">
+            <div class="flex items-center gap-2 mb-3">
+                <h2 class="text-lg font-bold text-stone-700">⏰ 什么时候做？</h2>
+                <span class="ai-badge text-white text-[10px] font-bold px-2 py-0.5 rounded-full">AI 推荐</span>
+            </div>
+            <p class="text-sm text-stone-400 mb-3">选择一个每天必做的事作为触发点</p>
+            <div id="anchorList" class="space-y-2 mb-3"></div>
+            <div class="input-focus bg-white p-1 rounded-[12px] border border-stone-200 flex items-center">
+                <div class="w-9 h-9 flex items-center justify-center text-stone-300">
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                </div>
+                <input type="text" id="custom-anchor" oninput="onCustomAnchor(this.value)" placeholder="或自己输入触发时机..." class="flex-1 bg-transparent border-none outline-none text-stone-700 font-medium placeholder-stone-300 h-10 text-sm">
+            </div>
+        </section>
+
+        <!-- Section 4: 庆祝方式 -->
+        <section id="celebrationSection" class="mb-8 section-appear visible">
+            <h2 class="text-lg font-bold text-stone-700 mb-1">🎉 完成后庆祝</h2>
+            <p class="text-sm text-stone-400 mb-3">即时的正向反馈帮助固化习惯</p>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="selectCelebration(this, '对自己微笑')" class="celebration-btn p-3 bg-white border border-stone-200 rounded-[12px] text-center active:scale-95 transition-all">
+                    <div class="text-2xl mb-1">😊</div>
+                    <div class="text-[11px] text-stone-600">对自己微笑</div>
+                </button>
+                <button onclick="selectCelebration(this, '握拳说耶')" class="celebration-btn p-3 bg-white border border-stone-200 rounded-[12px] text-center active:scale-95 transition-all">
+                    <div class="text-2xl mb-1">✊</div>
+                    <div class="text-[11px] text-stone-600">握拳说耶</div>
+                </button>
+                <button onclick="selectCelebration(this, '心里说太棒了')" class="celebration-btn p-3 bg-white border border-stone-200 rounded-[12px] text-center active:scale-95 transition-all">
+                    <div class="text-2xl mb-1">💭</div>
+                    <div class="text-[11px] text-stone-600">心里说太棒了</div>
+                </button>
+                <button onclick="selectCelebration(this, '深呼吸')" class="celebration-btn p-3 bg-white border border-stone-200 rounded-[12px] text-center active:scale-95 transition-all">
+                    <div class="text-2xl mb-1">🌬️</div>
+                    <div class="text-[11px] text-stone-600">深呼吸</div>
+                </button>
+                <button onclick="selectCelebration(this, '给自己点赞')" class="celebration-btn p-3 bg-white border border-stone-200 rounded-[12px] text-center active:scale-95 transition-all">
+                    <div class="text-2xl mb-1">👍</div>
+                    <div class="text-[11px] text-stone-600">给自己点赞</div>
+                </button>
+                <button onclick="selectCelebration(this, '胜利手势')" class="celebration-btn p-3 bg-white border border-stone-200 rounded-[12px] text-center active:scale-95 transition-all">
+                    <div class="text-2xl mb-1">✌️</div>
+                    <div class="text-[11px] text-stone-600">胜利手势</div>
+                </button>
+            </div>
+        </section>
+
+        <!-- Section 5: 打卡频率 -->
+        <section id="frequencySection" class="mb-8 section-appear visible">
+            <h2 class="text-lg font-bold text-stone-700 mb-1">📅 打卡频率</h2>
+            <p class="text-sm text-stone-400 mb-3">选择每周需要打卡的日子</p>
+            <div class="flex justify-between gap-1 mb-3">
+                <button onclick="toggleDay(0)" class="day-btn w-10 h-10 rounded-full bg-white border border-stone-200 text-sm font-medium text-stone-600" data-day="0">日</button>
+                <button onclick="toggleDay(1)" class="day-btn w-10 h-10 rounded-full bg-white border border-stone-200 text-sm font-medium text-stone-600" data-day="1">一</button>
+                <button onclick="toggleDay(2)" class="day-btn w-10 h-10 rounded-full bg-white border border-stone-200 text-sm font-medium text-stone-600" data-day="2">二</button>
+                <button onclick="toggleDay(3)" class="day-btn w-10 h-10 rounded-full bg-white border border-stone-200 text-sm font-medium text-stone-600" data-day="3">三</button>
+                <button onclick="toggleDay(4)" class="day-btn w-10 h-10 rounded-full bg-white border border-stone-200 text-sm font-medium text-stone-600" data-day="4">四</button>
+                <button onclick="toggleDay(5)" class="day-btn w-10 h-10 rounded-full bg-white border border-stone-200 text-sm font-medium text-stone-600" data-day="5">五</button>
+                <button onclick="toggleDay(6)" class="day-btn w-10 h-10 rounded-full bg-white border border-stone-200 text-sm font-medium text-stone-600" data-day="6">六</button>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="selectAllDays()" class="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-xs font-medium text-stone-600">每天</button>
+                <button onclick="selectWeekdays()" class="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-xs font-medium text-stone-600">工作日</button>
+                <button onclick="selectWeekends()" class="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-xs font-medium text-stone-600">周末</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- 习惯库弹窗 -->
+    <div id="habitLibraryModal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-black/50" onclick="closeHabitLibrary()"></div>
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl h-[85vh] flex flex-col">
+            <!-- 头部 -->
+            <div class="p-4 border-b border-stone-100 flex items-center justify-between flex-shrink-0">
+                <button onclick="closeHabitLibrary()" class="text-stone-400 text-sm font-medium">取消</button>
+                <h3 class="text-base font-bold text-stone-700">选择习惯</h3>
+                <div class="w-10"></div>
+            </div>
+            <!-- 分类标签 -->
+            <div class="px-4 py-3 flex gap-2 overflow-x-auto hide-scrollbar flex-shrink-0 border-b border-stone-100">
+                <button onclick="filterHabits('all')" class="category-btn px-4 py-1.5 rounded-full text-sm font-medium bg-emerald-500 text-white whitespace-nowrap" data-category="all">全部</button>
+                <button onclick="filterHabits('推荐')" class="category-btn px-4 py-1.5 rounded-full text-sm font-medium bg-stone-100 text-stone-600 whitespace-nowrap" data-category="推荐">推荐</button>
+                <button onclick="filterHabits('健康')" class="category-btn px-4 py-1.5 rounded-full text-sm font-medium bg-stone-100 text-stone-600 whitespace-nowrap" data-category="健康">健康</button>
+                <button onclick="filterHabits('学习')" class="category-btn px-4 py-1.5 rounded-full text-sm font-medium bg-stone-100 text-stone-600 whitespace-nowrap" data-category="学习">学习</button>
+                <button onclick="filterHabits('生活')" class="category-btn px-4 py-1.5 rounded-full text-sm font-medium bg-stone-100 text-stone-600 whitespace-nowrap" data-category="生活">生活</button>
+                <button onclick="filterHabits('心理')" class="category-btn px-4 py-1.5 rounded-full text-sm font-medium bg-stone-100 text-stone-600 whitespace-nowrap" data-category="心理">心理</button>
+                <button onclick="filterHabits('社交')" class="category-btn px-4 py-1.5 rounded-full text-sm font-medium bg-stone-100 text-stone-600 whitespace-nowrap" data-category="社交">社交</button>
+            </div>
+            <!-- 习惯列表 -->
+            <div class="flex-1 overflow-y-auto hide-scrollbar">
+                <div id="habitLibraryList" class="divide-y divide-stone-100"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom: Preview + Create Button -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-stone-100 px-5 pt-3 pb-8 z-50">
+        <div class="mb-3 bg-stone-50 p-3 rounded-xl border border-stone-100">
+            <div class="text-[10px] text-stone-400 font-semibold uppercase tracking-wider mb-1">我的配方</div>
+            <div class="text-sm text-stone-700 leading-relaxed">
+                当 <span id="preview-anchor" class="text-stone-300">___</span> 后，我会 <span id="preview-behavior" class="text-stone-300">___</span>，然后 <span id="preview-celebration" class="text-stone-300">___</span>
+            </div>
+        </div>
+        <button id="createBtn" onclick="createHabit()" class="w-full btn-disabled py-4 rounded-xl font-semibold text-base transition-all" disabled>
+            确认创建
+        </button>
+    </div>
+
+    <script>
+    lucide.createIcons();
+    if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
+
+    let data = { goal: '', behavior: '', anchor: '', celebration: '', frequency: [] };
+
+    // AI推荐数据
+    const aiData = {
+        '多喝水': {
+            behaviors: [
+                { text: '喝一口水', difficulty: 'easy', icon: '💧' },
+                { text: '喝半杯水', difficulty: 'easy', icon: '🥤' },
+                { text: '喝一杯水', difficulty: 'medium', icon: '🫗' },
+                { text: '喝两杯水', difficulty: 'hard', icon: '💦' }
+            ],
+            anchors: [
+                { text: '起床后', icon: '🛏️', tip: '早晨补水最佳' },
+                { text: '到公司后', icon: '💼', tip: '开启工作模式' },
+                { text: '上完厕所后', icon: '🚽', tip: '自然提醒' },
+                { text: '吃完饭后', icon: '🍚', tip: '帮助消化' }
+            ]
+        },
+        '坚持运动': {
+            behaviors: [
+                { text: '做2个深蹲', difficulty: 'easy', icon: '🏋️' },
+                { text: '做5个俯卧撑', difficulty: 'easy', icon: '💪' },
+                { text: '原地跳10下', difficulty: 'medium', icon: '🦘' },
+                { text: '平板支撑30秒', difficulty: 'hard', icon: '🧘' }
+            ],
+            anchors: [
+                { text: '起床后', icon: '🌅', tip: '唤醒身体' },
+                { text: '午休后', icon: '☀️', tip: '提神醒脑' },
+                { text: '下班回家后', icon: '🏠', tip: '释放压力' },
+                { text: '洗澡前', icon: '🚿', tip: '运动完正好洗' }
+            ]
+        },
+        '早睡早起': {
+            behaviors: [
+                { text: '把手机放远', difficulty: 'easy', icon: '📱' },
+                { text: '关一盏灯', difficulty: 'easy', icon: '💡' },
+                { text: '深呼吸3次', difficulty: 'medium', icon: '🌬️' },
+                { text: '写明天计划', difficulty: 'medium', icon: '📝' }
+            ],
+            anchors: [
+                { text: '晚上10点后', icon: '⏰', tip: '固定时间' },
+                { text: '刷完牙后', icon: '🪥', tip: '睡前仪式' },
+                { text: '换好睡衣后', icon: '👕', tip: '准备入睡' },
+                { text: '关电视后', icon: '📺', tip: '减少蓝光' }
+            ]
+        },
+        '阅读': {
+            behaviors: [
+                { text: '读一页书', difficulty: 'easy', icon: '📖' },
+                { text: '读一段话', difficulty: 'easy', icon: '📄' },
+                { text: '读5分钟', difficulty: 'medium', icon: '⏱️' },
+                { text: '读一章节', difficulty: 'hard', icon: '📚' }
+            ],
+            anchors: [
+                { text: '躺到床上后', icon: '🛏️', tip: '睡前阅读' },
+                { text: '喝咖啡时', icon: '☕', tip: '享受时光' },
+                { text: '午休时', icon: '🌤️', tip: '碎片时间' },
+                { text: '坐地铁时', icon: '🚇', tip: '通勤利用' }
+            ]
+        },
+        '冥想': {
+            behaviors: [
+                { text: '闭眼深呼吸3次', difficulty: 'easy', icon: '🧘' },
+                { text: '静坐30秒', difficulty: 'easy', icon: '🪷' },
+                { text: '呼吸练习1分钟', difficulty: 'medium', icon: '🌬️' },
+                { text: '冥想5分钟', difficulty: 'hard', icon: '✨' }
+            ],
+            anchors: [
+                { text: '起床后', icon: '🌅', tip: '开启平静一天' },
+                { text: '午饭后', icon: '🍱', tip: '下午提神' },
+                { text: '下班后', icon: '🏢', tip: '切换模式' },
+                { text: '睡前', icon: '🌙', tip: '放松入眠' }
+            ]
+        },
+        '健康饮食': {
+            behaviors: [
+                { text: '吃一口蔬菜', difficulty: 'easy', icon: '🥬' },
+                { text: '吃一个水果', difficulty: 'easy', icon: '🍎' },
+                { text: '喝杯蔬果汁', difficulty: 'medium', icon: '🥤' },
+                { text: '准备一份沙拉', difficulty: 'hard', icon: '🥗' }
+            ],
+            anchors: [
+                { text: '吃饭前', icon: '🍽️', tip: '先吃蔬菜' },
+                { text: '下午茶时', icon: '🫖', tip: '水果代零食' },
+                { text: '打开冰箱后', icon: '🧊', tip: '健康选择' },
+                { text: '点外卖前', icon: '📱', tip: '提醒自己' }
+            ]
+        }
+    };
+
+    function getAIData(goal) {
+        for (let key in aiData) {
+            if (goal.includes(key) || key.includes(goal)) return aiData[key];
+        }
+        return aiData['多喝水']; // 默认
+    }
+
+    function onGoalInput(value) {
+        data.goal = value;
+        if (value.trim().length >= 2) {
+            showAISections();
+        }
+    }
+
+    function selectGoal(goal) {
+        data.goal = goal;
+        document.getElementById('input-goal').value = goal;
+        showAISections();
+        if (navigator.vibrate) navigator.vibrate(5);
+    }
+
+    function showAISections() {
+        const ai = getAIData(data.goal);
+        
+        // 渲染微行为
+        document.getElementById('behaviorList').innerHTML = ai.behaviors.map(item => `
+            <div onclick="selectBehavior(this, '${item.text}')" class="behavior-card bg-white p-3 rounded-xl border border-stone-200 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all">
+                <div class="w-11 h-11 rounded-xl bg-stone-50 flex items-center justify-center text-xl">${item.icon}</div>
+                <div class="flex-1">
+                    <div class="text-sm font-semibold text-stone-700">${item.text}</div>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded difficulty-${item.difficulty}">${item.difficulty === 'easy' ? '🌱 简单' : item.difficulty === 'medium' ? '🌿 适中' : '🌳 挑战'}</span>
+                </div>
+                <div class="check-circle w-5 h-5 rounded-full border-2 border-stone-200 flex items-center justify-center">
+                    <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+            </div>
+        `).join('');
+
+        // 渲染锚点
+        document.getElementById('anchorList').innerHTML = ai.anchors.map(item => `
+            <div onclick="selectAnchor(this, '${item.text}')" class="anchor-card bg-white p-3 rounded-xl border border-stone-200 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all">
+                <div class="w-11 h-11 rounded-xl bg-stone-50 flex items-center justify-center text-xl">${item.icon}</div>
+                <div class="flex-1">
+                    <div class="text-sm font-semibold text-stone-700">${item.text}</div>
+                    <div class="text-[11px] text-stone-400">${item.tip}</div>
+                </div>
+                <div class="check-circle w-5 h-5 rounded-full border-2 border-stone-200 flex items-center justify-center">
+                    <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function selectBehavior(el, behavior) {
+        data.behavior = behavior;
+        document.querySelectorAll('.behavior-card').forEach(c => c.classList.remove('selected-card'));
+        el.classList.add('selected-card');
+        document.getElementById('custom-behavior').value = '';
+        updatePreview();
+        if (navigator.vibrate) navigator.vibrate(5);
+    }
+
+    function onCustomBehavior(value) {
+        if (value.trim()) {
+            data.behavior = value;
+            document.querySelectorAll('.behavior-card').forEach(c => c.classList.remove('selected-card'));
+            updatePreview();
+        }
+    }
+
+    function selectAnchor(el, anchor) {
+        data.anchor = anchor;
+        document.querySelectorAll('.anchor-card').forEach(c => c.classList.remove('selected-card'));
+        el.classList.add('selected-card');
+        document.getElementById('custom-anchor').value = '';
+        updatePreview();
+        if (navigator.vibrate) navigator.vibrate(5);
+    }
+
+    function onCustomAnchor(value) {
+        if (value.trim()) {
+            data.anchor = value;
+            document.querySelectorAll('.anchor-card').forEach(c => c.classList.remove('selected-card'));
+            updatePreview();
+        }
+    }
+
+    function selectCelebration(el, celebration) {
+        data.celebration = celebration;
+        document.querySelectorAll('.celebration-btn').forEach(c => c.classList.remove('selected-card'));
+        el.classList.add('selected-card');
+        updatePreview();
+        if (navigator.vibrate) navigator.vibrate(5);
+    }
+
+    function toggleDay(day) {
+        const btn = document.querySelector(`[data-day="${day}"]`);
+        const idx = data.frequency.indexOf(day);
+        if (idx > -1) { data.frequency.splice(idx, 1); btn.classList.remove('selected'); }
+        else { data.frequency.push(day); btn.classList.add('selected'); }
+        data.frequency.sort((a,b) => a-b);
+        updatePreview();
+        if (navigator.vibrate) navigator.vibrate(5);
+    }
+
+    function selectAllDays() {
+        data.frequency = [0,1,2,3,4,5,6];
+        document.querySelectorAll('.day-btn').forEach(b => b.classList.add('selected'));
+        updatePreview();
+    }
+
+    function selectWeekdays() {
+        data.frequency = [1,2,3,4,5];
+        document.querySelectorAll('.day-btn').forEach(b => {
+            const d = parseInt(b.dataset.day);
+            b.classList.toggle('selected', d >= 1 && d <= 5);
+        });
+        updatePreview();
+    }
+
+    function selectWeekends() {
+        data.frequency = [0,6];
+        document.querySelectorAll('.day-btn').forEach(b => {
+            const d = parseInt(b.dataset.day);
+            b.classList.toggle('selected', d === 0 || d === 6);
+        });
+        updatePreview();
+    }
+
+    function updatePreview() {
+        const setPreview = (id, value) => {
+            const el = document.getElementById(id);
+            if (value) {
+                el.textContent = value;
+                el.classList.remove('text-stone-300');
+                el.classList.add('text-primary', 'font-semibold');
+            } else {
+                el.textContent = '___';
+                el.classList.add('text-stone-300');
+                el.classList.remove('text-primary', 'font-semibold');
+            }
+        };
+        setPreview('preview-anchor', data.anchor);
+        setPreview('preview-behavior', data.behavior);
+        setPreview('preview-celebration', data.celebration);
+
+        const btn = document.getElementById('createBtn');
+        const canCreate = data.behavior && data.anchor && data.celebration && data.frequency.length > 0;
+        btn.disabled = !canCreate;
+        btn.classList.toggle('btn-disabled', !canCreate);
+        btn.classList.toggle('btn-active', canCreate);
+    }
+
+    function createHabit() {
+        window.location.href = 'home.html';
+    }
+
+    // 习惯库数据
+    const habitLibrary = [
+        // 推荐习惯
+        { name: '每天运动30分钟', desc: '增强体质，保持活力', icon: '🏃', iconBg: '#D1FAE5', category: '推荐' },
+        { name: '保证7-9小时睡眠', desc: '充足睡眠，精力充沛', icon: '😴', iconBg: '#E0E7FF', category: '推荐' },
+        { name: '每周读完1本书', desc: '持续学习，拓展视野', icon: '📚', iconBg: '#FEF3C7', category: '推荐' },
+        { name: '每天冥想20分钟', desc: '静心养神，提升专注', icon: '🧘', iconBg: '#FCE7F3', category: '推荐' },
+        { name: '每天写1句话日记', desc: '记录生活，培养觉察', icon: '✍️', iconBg: '#DBEAFE', category: '推荐' },
+        { name: '饭前喝一杯温水', desc: '促进消化，健康饮食', icon: '💧', iconBg: '#CFFAFE', category: '推荐' },
+
+        // 健康习惯
+        { name: '多喝水', desc: '每天8杯水，保持水分', icon: '💧', iconBg: '#CFFAFE', category: '健康' },
+        { name: '坚持运动', desc: '强身健体，活力满满', icon: '💪', iconBg: '#D1FAE5', category: '健康' },
+        { name: '早睡早起', desc: '规律作息，精神饱满', icon: '🌅', iconBg: '#FEF3C7', category: '健康' },
+        { name: '健康饮食', desc: '均衡营养，身体棒棒', icon: '🥗', iconBg: '#D1FAE5', category: '健康' },
+        { name: '多吃彩色蔬果', desc: '补充维生素，增强免疫', icon: '🥬', iconBg: '#D1FAE5', category: '健康' },
+        { name: '护肤', desc: '呵护肌肤，保持年轻', icon: '🧴', iconBg: '#FCE7F3', category: '健康' },
+        { name: '拉伸', desc: '舒展筋骨，预防损伤', icon: '🤸', iconBg: '#E0E7FF', category: '健康' },
+        { name: '喝茶', desc: '养生保健，静心养神', icon: '🍵', iconBg: '#D1FAE5', category: '健康' },
+        { name: '每天晒10分钟太阳', desc: '补充维D，改善心情', icon: '☀️', iconBg: '#FEF3C7', category: '健康' },
+        { name: '坚持散步', desc: '简单运动，放松身心', icon: '🚶', iconBg: '#D1FAE5', category: '健康' },
+        { name: '走路不用手机', desc: '专注当下，保护安全', icon: '📵', iconBg: '#FEE2E2', category: '健康' },
+
+        // 学习习惯
+        { name: '阅读', desc: '开卷有益，增长见识', icon: '📖', iconBg: '#FEF3C7', category: '学习' },
+        { name: '学英语', desc: '每天进步一点点', icon: '🔤', iconBg: '#DBEAFE', category: '学习' },
+        { name: '练字', desc: '修身养性，陶冶情操', icon: '✒️', iconBg: '#E0E7FF', category: '学习' },
+        { name: '听播客', desc: '碎片时间，高效学习', icon: '🎧', iconBg: '#FCE7F3', category: '学习' },
+        { name: '每年学1个新技能', desc: '持续成长，突破自我', icon: '🎯', iconBg: '#D1FAE5', category: '学习' },
+        { name: '设置专注时段', desc: '深度工作，提升效率', icon: '⏰', iconBg: '#FEF3C7', category: '学习' },
+        { name: '利用碎片时间', desc: '积少成多，高效利用', icon: '⏱️', iconBg: '#CFFAFE', category: '学习' },
+        { name: '每周写To Do List', desc: '规划任务，有条不紊', icon: '📋', iconBg: '#E0E7FF', category: '学习' },
+        { name: '遇事先写解决方案', desc: '理性思考，高效解决', icon: '💡', iconBg: '#FEF3C7', category: '学习' },
+
+        // 生活习惯
+        { name: '整理房间', desc: '整洁环境，清爽心情', icon: '🏠', iconBg: '#DBEAFE', category: '生活' },
+        { name: '记账', desc: '理财有道，心中有数', icon: '💰', iconBg: '#FEF3C7', category: '生活' },
+        { name: '少刷手机', desc: '减少依赖，专注生活', icon: '📱', iconBg: '#FEE2E2', category: '生活' },
+        { name: '手机设黑白模式', desc: '降低吸引，减少使用', icon: '📴', iconBg: '#E5E7EB', category: '生活' },
+        { name: '睡前手机放其他房间', desc: '改善睡眠，远离干扰', icon: '🛏️', iconBg: '#E0E7FF', category: '生活' },
+        { name: '只保留1张信用卡', desc: '简化财务，理性消费', icon: '💳', iconBg: '#DBEAFE', category: '生活' },
+        { name: '工资20%存入储蓄', desc: '强制储蓄，积累财富', icon: '🏦', iconBg: '#D1FAE5', category: '生活' },
+        { name: '目标贴在冰箱门上', desc: '时刻提醒，保持动力', icon: '🎯', iconBg: '#FCE7F3', category: '生活' },
+        { name: '每周末去公园散步', desc: '亲近自然，放松身心', icon: '🌳', iconBg: '#D1FAE5', category: '生活' },
+        { name: '每周尝试陌生路线', desc: '探索新鲜，保持好奇', icon: '🗺️', iconBg: '#CFFAFE', category: '生活' },
+        { name: '定期数字断舍离', desc: '清理冗余，轻装上阵', icon: '🗑️', iconBg: '#E5E7EB', category: '生活' },
+        { name: '每天清理信息垃圾', desc: '减少噪音，专注重要', icon: '📧', iconBg: '#FEE2E2', category: '生活' },
+        { name: '留一点没必要的精致', desc: '生活仪式感，提升幸福', icon: '✨', iconBg: '#FCE7F3', category: '生活' },
+
+        // 心理习惯
+        { name: '冥想', desc: '静心养神，提升专注', icon: '🧘', iconBg: '#FCE7F3', category: '心理' },
+        { name: '写日记', desc: '记录生活，整理思绪', icon: '📝', iconBg: '#DBEAFE', category: '心理' },
+        { name: '睡前写感恩日记', desc: '感恩生活，积极心态', icon: '🙏', iconBg: '#D1FAE5', category: '心理' },
+        { name: '每天记三件小幸福', desc: '发现美好，提升幸福感', icon: '🌈', iconBg: '#FCE7F3', category: '心理' },
+        { name: '生气时先默数10秒', desc: '情绪管理，理性应对', icon: '😤', iconBg: '#FEE2E2', category: '心理' },
+        { name: '压力大时写流水账', desc: '释放压力，整理情绪', icon: '📓', iconBg: '#E0E7FF', category: '心理' },
+        { name: '习惯复盘而不是后悔', desc: '成长思维，持续进步', icon: '🔄', iconBg: '#CFFAFE', category: '心理' },
+        { name: '每月设定一个主题词', desc: '聚焦目标，保持方向', icon: '🏷️', iconBg: '#FEF3C7', category: '心理' },
+        { name: '给自己写信', desc: '自我对话，深度思考', icon: '💌', iconBg: '#FCE7F3', category: '心理' },
+        { name: '坚持做无聊事', desc: '培养耐心，享受当下', icon: '🌿', iconBg: '#D1FAE5', category: '心理' },
+        { name: '独处时不刻意找事做', desc: '学会独处，内心平静', icon: '🧘‍♂️', iconBg: '#E0E7FF', category: '心理' },
+        { name: '学会积极思考', desc: '正向思维，乐观面对', icon: '💭', iconBg: '#DBEAFE', category: '心理' },
+        { name: '存好情绪当技能练', desc: '情绪管理，自我成长', icon: '🎭', iconBg: '#FCE7F3', category: '心理' },
+        { name: '在生活中找意义点', desc: '发现价值，充实人生', icon: '🔍', iconBg: '#FEF3C7', category: '心理' },
+        { name: '不要等状态来了再开始', desc: '行动优先，克服拖延', icon: '🚀', iconBg: '#D1FAE5', category: '心理' },
+        { name: '把每天定为一次开场', desc: '全新开始，积极心态', icon: '🌅', iconBg: '#FEF3C7', category: '心理' },
+        { name: '每月给自己体面感奖励', desc: '自我犒赏，保持动力', icon: '🎁', iconBg: '#FCE7F3', category: '心理' },
+        { name: '学会拒绝', desc: '设立边界，保护自己', icon: '🚫', iconBg: '#FEE2E2', category: '心理' },
+
+        // 社交习惯
+        { name: '每周约见3位朋友', desc: '维系友情，社交充电', icon: '👥', iconBg: '#DBEAFE', category: '社交' },
+        { name: '每月当1次志愿者', desc: '回馈社会，收获快乐', icon: '🤝', iconBg: '#D1FAE5', category: '社交' },
+        { name: '接电话前先保持微笑', desc: '传递温暖，改善沟通', icon: '😊', iconBg: '#FEF3C7', category: '社交' },
+        { name: '花时间和长辈聊天', desc: '陪伴家人，传递关爱', icon: '👴', iconBg: '#E0E7FF', category: '社交' },
+        { name: '养成表达感谢的习惯', desc: '感恩他人，增进关系', icon: '💐', iconBg: '#FCE7F3', category: '社交' },
+        { name: '坚持做只有你知道的好事', desc: '默默付出，内心富足', icon: '🌟', iconBg: '#FEF3C7', category: '社交' },
+        { name: '每周末写本周总结', desc: '回顾反思，持续成长', icon: '📊', iconBg: '#DBEAFE', category: '社交' },
+        { name: '设定提醒关心朋友', desc: '主动联系，维护友情', icon: '💬', iconBg: '#CFFAFE', category: '社交' },
+    ];
+
+    let currentCategory = 'all';
+
+    function openHabitLibrary() {
+        currentCategory = 'all';
+        renderHabitList(habitLibrary);
+        updateCategoryButtons();
+        document.getElementById('habitLibraryModal').classList.remove('hidden');
+    }
+
+    function renderHabitList(habits) {
+        const list = document.getElementById('habitLibraryList');
+        list.innerHTML = habits.map(item => `
+            <div onclick="selectHabitFromLibrary('${item.name}')" class="px-4 py-3 flex items-center gap-3 cursor-pointer active:bg-stone-50 transition-all">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl" style="background-color: ${item.iconBg}">${item.icon}</div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-semibold text-stone-700 truncate">${item.name}</div>
+                    <div class="text-xs text-stone-400 truncate">${item.desc}</div>
+                </div>
+                <div class="w-5 h-5 rounded-full border-2 border-stone-200 flex-shrink-0"></div>
+            </div>
+        `).join('');
+    }
+
+    function filterHabits(category) {
+        currentCategory = category;
+        const filtered = category === 'all' ? habitLibrary : habitLibrary.filter(h => h.category === category);
+        renderHabitList(filtered);
+        updateCategoryButtons();
+    }
+
+    function updateCategoryButtons() {
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            const cat = btn.dataset.category;
+            if (cat === currentCategory) {
+                btn.classList.remove('bg-stone-100', 'text-stone-600');
+                btn.classList.add('bg-emerald-500', 'text-white');
+            } else {
+                btn.classList.remove('bg-emerald-500', 'text-white');
+                btn.classList.add('bg-stone-100', 'text-stone-600');
+            }
+        });
+    }
+
+    function closeHabitLibrary() {
+        document.getElementById('habitLibraryModal').classList.add('hidden');
+    }
+
+    function selectHabitFromLibrary(name) {
+        // Find and highlight the selected item
+        const items = document.querySelectorAll('#habitLibraryList > div');
+        items.forEach(item => {
+            const itemName = item.querySelector('.text-sm.font-semibold').textContent;
+            const circle = item.querySelector('.w-5.h-5.rounded-full');
+            if (itemName === name) {
+                circle.classList.remove('border-stone-200');
+                circle.classList.add('bg-emerald-500', 'border-emerald-500');
+                circle.innerHTML = '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
+            }
+        });
+
+        // Delay to show selection effect, then close
+        setTimeout(() => {
+            selectGoal(name);
+            closeHabitLibrary();
+        }, 200);
+    }
+
+    // 页面加载时初始化默认内容
+    document.addEventListener('DOMContentLoaded', function() {
+        data.goal = '多喝水';
+        showAISections();
+    });
+    </script>
+</body>
+</html>

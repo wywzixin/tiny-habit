@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tiny Habits - Profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --color-primary: #10B981; }
+        body { font-family: 'Noto Sans SC', sans-serif; -webkit-tap-highlight-color: transparent; transition: background-color 0.3s ease, color 0.3s ease; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-top: 1px solid rgba(0,0,0,0.04); transition: background-color 0.3s ease; }
+
+        /* Toggle Switch */
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e7e5e4; border-radius: 24px; transition: 0.3s; }
+        .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.3s; }
+        input:checked + .toggle-slider { background-color: #10B981; }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+        /* Dark Mode Styles */
+        body.dark-mode { background-color: #1a1a1a; color: #e7e5e4; }
+        body.dark-mode .bg-stone-50 { background-color: #1a1a1a !important; }
+        body.dark-mode .bg-white { background-color: #2a2a2a !important; }
+        body.dark-mode .text-stone-700 { color: #e7e5e4 !important; }
+        body.dark-mode .text-stone-600 { color: #a8a29e !important; }
+        body.dark-mode .text-stone-400 { color: #78716c !important; }
+        body.dark-mode .text-stone-500 { color: #a8a29e !important; }
+        body.dark-mode .border-stone-200 { border-color: #3a3a3a !important; }
+        body.dark-mode .border-stone-100 { border-color: #3a3a3a !important; }
+        body.dark-mode .glass { background: rgba(42,42,42,0.95) !important; border-top-color: rgba(255,255,255,0.04) !important; }
+        body.dark-mode .bg-gradient-to-br { background: linear-gradient(to bottom right, #059669, #047857) !important; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#10B981', light: '#D1FAE5' },
+                        stone: { 50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 400: '#a8a29e', 600: '#57534e', 700: '#44403C', 800: '#292524' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-stone-50 text-stone-700 h-screen w-full overflow-hidden flex flex-col">
+    <header class="px-5 pt-12 pb-3 bg-stone-50 z-20 sticky top-0">
+        <h1 class="text-xl font-bold text-stone-700">我的</h1>
+    </header>
+    <main class="flex-1 overflow-y-auto hide-scrollbar relative px-5 pb-28 pt-2">
+        <!-- User Info with Background -->
+        <div class="relative -mx-5 px-5 pt-8 pb-12 mb-6 bg-gradient-to-br from-primary to-emerald-600 overflow-hidden">
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute top-0 right-0 w-56 h-56 bg-white rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                <div class="absolute bottom-0 left-0 w-44 h-44 bg-white rounded-full translate-y-1/2 -translate-x-1/2"></div>
+                <div class="absolute top-1/2 left-1/2 w-32 h-32 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+            </div>
+            <div class="relative flex items-center gap-4">
+                <div class="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm overflow-hidden border-2 border-white/30">
+                    <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Felix" alt="Avatar" class="w-full h-full object-cover">
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-white">何志武</h2>
+                    <span class="text-sm text-white/80">Lv.3 探索者</span>
+                </div>
+            </div>
+        </div>
+        <!-- Settings -->
+        <div class="bg-white rounded-[16px] border border-stone-200 overflow-hidden mb-6">
+            <a href="rewards.html" class="p-4 flex items-center justify-between border-b border-stone-100 active:bg-stone-50 transition-colors">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="gift" class="w-5 h-5 text-stone-400"></i>
+                    <span class="text-sm font-medium text-stone-700">奖励中心</span>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-stone-300"></i>
+            </a>
+            <div class="p-4 flex items-center justify-between border-b border-stone-100">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="palette" class="w-5 h-5 text-stone-400"></i>
+                    <span class="text-sm font-medium text-stone-700">主题样式</span>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-stone-300"></i>
+            </div>
+            <div class="p-4 flex items-center justify-between border-b border-stone-100">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="globe" class="w-5 h-5 text-stone-400"></i>
+                    <span class="text-sm font-medium text-stone-700">语言设置</span>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-stone-300"></i>
+            </div>
+            <div class="p-4 flex items-center justify-between border-b border-stone-100">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="moon" class="w-5 h-5 text-stone-400"></i>
+                    <span class="text-sm font-medium text-stone-700">深色模式</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="p-4 flex items-center justify-between border-b border-stone-100">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="bell" class="w-5 h-5 text-stone-400"></i>
+                    <span class="text-sm font-medium text-stone-700">通知提醒</span>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-stone-300"></i>
+            </div>
+            <div class="p-4 flex items-center justify-between border-b border-stone-100">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="book-open" class="w-5 h-5 text-stone-400"></i>
+                    <span class="text-sm font-medium text-stone-700">关于福格模型</span>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-stone-300"></i>
+            </div>
+            <div class="p-4 flex items-center justify-between border-b border-stone-100">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="message-circle" class="w-5 h-5 text-stone-400"></i>
+                    <span class="text-sm font-medium text-stone-700">反馈建议</span>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-stone-300"></i>
+            </div>
+            <div class="p-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="mail" class="w-5 h-5 text-stone-400"></i>
+                    <span class="text-sm font-medium text-stone-700">联系我们</span>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-stone-300"></i>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <span class="text-[10px] text-stone-300">Tiny Habits v1.0.0</span>
+        </div>
+    </main>
+    <!-- Bottom Navigation -->
+    <nav class="glass fixed bottom-0 left-0 right-0 px-6 pt-2 pb-8 z-40">
+        <div class="flex justify-around items-center relative">
+            <a href="home.html" class="flex flex-col items-center gap-1 py-2 opacity-50 flex-1">
+                <i data-lucide="home" class="w-6 h-6 text-stone-600 stroke-[2px]"></i>
+                <span class="text-[10px] font-medium text-stone-500">首页</span>
+            </a>
+            <a href="recipes.html" class="flex flex-col items-center gap-1 py-2 opacity-50 flex-1">
+                <i data-lucide="compass" class="w-6 h-6 text-stone-600 stroke-[2px]"></i>
+                <span class="text-[10px] font-medium text-stone-500">发现</span>
+            </a>
+
+            <!-- Center Floating Button -->
+            <div class="flex-1 flex justify-center">
+                <a href="create.html" class="absolute -top-8 w-14 h-14 bg-primary rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+                    <i data-lucide="plus" class="w-7 h-7 text-white stroke-[2.5px]"></i>
+                </a>
+            </div>
+
+            <a href="achievement.html" class="flex flex-col items-center gap-1 py-2 opacity-50 flex-1">
+                <i data-lucide="bar-chart-2" class="w-6 h-6 text-stone-600 stroke-[2px]"></i>
+                <span class="text-[10px] font-medium text-stone-500">统计</span>
+            </a>
+            <a href="profile.html" class="flex flex-col items-center gap-1 py-2 flex-1">
+                <i data-lucide="user" class="w-6 h-6 text-primary stroke-[2px]"></i>
+                <span class="text-[10px] font-semibold text-primary">我的</span>
+            </a>
+        </div>
+    </nav>
+    <script>
+        lucide.createIcons();
+
+        // Check for saved dark mode preference
+        const isDarkMode = localStorage.getItem('darkMode') === 'true';
+        if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+            document.getElementById('darkModeToggle').checked = true;
+        }
+
+        function toggleDarkMode() {
+            const toggle = document.getElementById('darkModeToggle');
+            if (toggle.checked) {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'true');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('darkMode', 'false');
+            }
+        }
+    </script>
+</body>
+</html>

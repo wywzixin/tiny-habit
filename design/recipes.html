@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tiny Habits - Recipes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --color-primary: #10B981; }
+        body { font-family: 'Noto Sans SC', sans-serif; -webkit-tap-highlight-color: transparent; transition: background-color 0.3s ease, color 0.3s ease; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-top: 1px solid rgba(0,0,0,0.04); }
+        .recipe-btn.added { color: white !important; }
+        .recipe-btn.added svg { color: white !important; stroke: white !important; }
+
+        /* Dark Mode Styles */
+        body.dark-mode { background-color: #1a1a1a; color: #e7e5e4; }
+        body.dark-mode .bg-stone-50 { background-color: #1a1a1a !important; }
+        body.dark-mode .bg-white { background-color: #2a2a2a !important; }
+        body.dark-mode .text-stone-700 { color: #e7e5e4 !important; }
+        body.dark-mode .text-stone-600 { color: #a8a29e !important; }
+        body.dark-mode .text-stone-400 { color: #78716c !important; }
+        body.dark-mode .text-stone-500 { color: #a8a29e !important; }
+        body.dark-mode .border-stone-200 { border-color: #3a3a3a !important; }
+        body.dark-mode .glass { background: rgba(42,42,42,0.95) !important; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#10B981', light: '#D1FAE5' },
+                        stone: { 50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 400: '#a8a29e', 600: '#57534e', 700: '#44403C', 800: '#292524' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-stone-50 text-stone-700 h-screen w-full overflow-hidden flex flex-col">
+    <header class="px-5 pt-12 pb-3 bg-stone-50 z-20 sticky top-0">
+        <h1 class="text-xl font-bold text-stone-700 mb-3">发现</h1>
+
+        <!-- Search Box -->
+        <div class="mb-3 bg-white rounded-[12px] border border-stone-200 flex items-center px-3 py-2">
+            <i data-lucide="search" class="w-4 h-4 text-stone-400 stroke-[2px]"></i>
+            <input type="text" id="searchInput" oninput="searchRecipes(this.value)" placeholder="搜索习惯..." class="flex-1 ml-2 bg-transparent border-none outline-none text-sm text-stone-700 placeholder-stone-300">
+            <button id="clearSearch" onclick="clearSearch()" class="hidden text-stone-400 hover:text-stone-600">
+                <i data-lucide="x" class="w-4 h-4 stroke-[2px]"></i>
+            </button>
+        </div>
+
+        <div class="flex gap-2 overflow-x-auto hide-scrollbar">
+            <button onclick="switchCategory(this, '全部')" class="category-btn px-3 py-1.5 rounded-[8px] bg-stone-700 text-white text-xs font-medium">全部</button>
+            <button onclick="switchCategory(this, '健康')" class="category-btn px-3 py-1.5 rounded-[8px] bg-white border border-stone-200 text-stone-600 text-xs font-medium">健康</button>
+            <button onclick="switchCategory(this, '生活')" class="category-btn px-3 py-1.5 rounded-[8px] bg-white border border-stone-200 text-stone-600 text-xs font-medium">生活</button>
+            <button onclick="switchCategory(this, '心理')" class="category-btn px-3 py-1.5 rounded-[8px] bg-white border border-stone-200 text-stone-600 text-xs font-medium">心理</button>
+            <button onclick="switchCategory(this, '效率')" class="category-btn px-3 py-1.5 rounded-[8px] bg-white border border-stone-200 text-stone-600 text-xs font-medium">效率</button>
+            <!-- <button onclick="switchCategory(this, '社交')" class="category-btn px-3 py-1.5 rounded-[8px] bg-white border border-stone-200 text-stone-600 text-xs font-medium">社交</button> -->
+        </div>
+    </header>
+    <main class="flex-1 overflow-y-auto hide-scrollbar relative px-5 pb-28 pt-4 space-y-3">
+        <!-- Recipe Card 1 -->
+        <div class="recipe-card bg-white p-4 rounded-[16px] border border-stone-200 flex items-center justify-between" data-anchor="双脚落地后" data-behavior="说一句今天很棒">
+            <div class="flex gap-3 items-center">
+                <div class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-xl">🛌</div>
+                <div>
+                    <div class="text-sm font-semibold text-stone-700">双脚落地后</div>
+                    <div class="text-xs text-stone-400 mt-0.5">说一句"今天很棒"</div>
+                </div>
+            </div>
+            <button onclick="addRecipe(this)" class="recipe-btn w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 active:scale-90 transition-transform">
+                <i data-lucide="plus" class="w-4 h-4 stroke-[2.5px]"></i>
+            </button>
+        </div>
+
+        <!-- Recipe Card 2 -->
+        <div class="recipe-card bg-white p-4 rounded-[16px] border border-stone-200 flex items-center justify-between" data-anchor="刷完牙后" data-behavior="用牙线清洁一颗牙">
+            <div class="flex gap-3 items-center">
+                <div class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-xl">🪥</div>
+                <div>
+                    <div class="text-sm font-semibold text-stone-700">刷完牙后</div>
+                    <div class="text-xs text-stone-400 mt-0.5">用牙线清洁一颗牙</div>
+                </div>
+            </div>
+            <button onclick="addRecipe(this)" class="recipe-btn w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 active:scale-90 transition-transform">
+                <i data-lucide="plus" class="w-4 h-4 stroke-[2.5px]"></i>
+            </button>
+        </div>
+
+        <!-- Recipe Card 3 -->
+        <div class="recipe-card bg-white p-4 rounded-[16px] border border-stone-200 flex items-center justify-between" data-anchor="倒好咖啡后" data-behavior="做两次深呼吸">
+            <div class="flex gap-3 items-center">
+                <div class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-xl">☕️</div>
+                <div>
+                    <div class="text-sm font-semibold text-stone-700">倒好咖啡后</div>
+                    <div class="text-xs text-stone-400 mt-0.5">做两次深呼吸</div>
+                </div>
+            </div>
+            <button onclick="addRecipe(this)" class="recipe-btn w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 active:scale-90 transition-transform">
+                <i data-lucide="plus" class="w-4 h-4 stroke-[2.5px]"></i>
+            </button>
+        </div>
+
+        <!-- Recipe Card 4 -->
+        <div class="recipe-card bg-white p-4 rounded-[16px] border border-stone-200 flex items-center justify-between" data-anchor="洗完手后" data-behavior="涂一点护手霜">
+            <div class="flex gap-3 items-center">
+                <div class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-xl">🧼</div>
+                <div>
+                    <div class="text-sm font-semibold text-stone-700">洗完手后</div>
+                    <div class="text-xs text-stone-400 mt-0.5">涂一点护手霜</div>
+                </div>
+            </div>
+            <button onclick="addRecipe(this)" class="recipe-btn w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 active:scale-90 transition-transform">
+                <i data-lucide="plus" class="w-4 h-4 stroke-[2.5px]"></i>
+            </button>
+        </div>
+
+        <!-- Recipe Card 5 -->
+        <div class="recipe-card bg-white p-4 rounded-[16px] border border-stone-200 flex items-center justify-between" data-anchor="打开手机后" data-behavior="先喝一口水">
+            <div class="flex gap-3 items-center">
+                <div class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-xl">📱</div>
+                <div>
+                    <div class="text-sm font-semibold text-stone-700">打开手机后</div>
+                    <div class="text-xs text-stone-400 mt-0.5">先喝一口水</div>
+                </div>
+            </div>
+            <button onclick="addRecipe(this)" class="recipe-btn w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 active:scale-90 transition-transform">
+                <i data-lucide="plus" class="w-4 h-4 stroke-[2.5px]"></i>
+            </button>
+        </div>
+
+        <!-- Recipe Card 6 -->
+        <div class="recipe-card bg-white p-4 rounded-[16px] border border-stone-200 flex items-center justify-between" data-anchor="坐进车里后" data-behavior="系好安全带">
+            <div class="flex gap-3 items-center">
+                <div class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-xl">🚗</div>
+                <div>
+                    <div class="text-sm font-semibold text-stone-700">坐进车里后</div>
+                    <div class="text-xs text-stone-400 mt-0.5">系好安全带</div>
+                </div>
+            </div>
+            <button onclick="addRecipe(this)" class="recipe-btn w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 active:scale-90 transition-transform">
+                <i data-lucide="plus" class="w-4 h-4 stroke-[2.5px]"></i>
+            </button>
+        </div>
+
+        <!-- Recipe Card 7 -->
+        <div class="recipe-card bg-white p-4 rounded-[16px] border border-stone-200 flex items-center justify-between" data-anchor="打开电脑后" data-behavior="整理桌面文件">
+            <div class="flex gap-3 items-center">
+                <div class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-xl">💻</div>
+                <div>
+                    <div class="text-sm font-semibold text-stone-700">打开电脑后</div>
+                    <div class="text-xs text-stone-400 mt-0.5">整理桌面文件</div>
+                </div>
+            </div>
+            <button onclick="addRecipe(this)" class="recipe-btn w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 active:scale-90 transition-transform">
+                <i data-lucide="plus" class="w-4 h-4 stroke-[2.5px]"></i>
+            </button>
+        </div>
+
+        <!-- Recipe Card 8 -->
+        <div class="recipe-card bg-white p-4 rounded-[16px] border border-stone-200 flex items-center justify-between" data-anchor="躺下睡觉前" data-behavior="感恩三件事">
+            <div class="flex gap-3 items-center">
+                <div class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-xl">🌙</div>
+                <div>
+                    <div class="text-sm font-semibold text-stone-700">躺下睡觉前</div>
+                    <div class="text-xs text-stone-400 mt-0.5">感恩三件事</div>
+                </div>
+            </div>
+            <button onclick="addRecipe(this)" class="recipe-btn w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 active:scale-90 transition-transform">
+                <i data-lucide="plus" class="w-4 h-4 stroke-[2.5px]"></i>
+            </button>
+        </div>
+    </main>
+    <!-- Bottom Navigation -->
+    <nav class="glass fixed bottom-0 left-0 right-0 px-6 pt-2 pb-8 z-40">
+        <div class="flex justify-around items-center relative">
+            <a href="home.html" class="flex flex-col items-center gap-1 py-2 opacity-50 flex-1">
+                <i data-lucide="home" class="w-6 h-6 text-stone-600 stroke-[2px]"></i>
+                <span class="text-[10px] font-medium text-stone-500">首页</span>
+            </a>
+            <a href="recipes.html" class="flex flex-col items-center gap-1 py-2 flex-1">
+                <i data-lucide="compass" class="w-6 h-6 text-primary stroke-[2px]"></i>
+                <span class="text-[10px] font-semibold text-primary">发现</span>
+            </a>
+
+            <!-- Center Floating Button -->
+            <div class="flex-1 flex justify-center">
+                <a href="create.html" class="absolute -top-8 w-14 h-14 bg-primary rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+                    <i data-lucide="plus" class="w-7 h-7 text-white stroke-[2.5px]"></i>
+                </a>
+            </div>
+
+            <a href="achievement.html" class="flex flex-col items-center gap-1 py-2 opacity-50 flex-1">
+                <i data-lucide="bar-chart-2" class="w-6 h-6 text-stone-600 stroke-[2px]"></i>
+                <span class="text-[10px] font-medium text-stone-500">统计</span>
+            </a>
+            <a href="profile.html" class="flex flex-col items-center gap-1 py-2 opacity-50 flex-1">
+                <i data-lucide="user" class="w-6 h-6 text-stone-600 stroke-[2px]"></i>
+                <span class="text-[10px] font-medium text-stone-500">我的</span>
+            </a>
+        </div>
+    </nav>
+    <script>
+        lucide.createIcons();
+
+        // Check for saved dark mode preference
+        const isDarkMode = localStorage.getItem('darkMode') === 'true';
+        if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+        }
+
+        function switchCategory(btn, category) {
+            // Remove active state from all buttons
+            document.querySelectorAll('.category-btn').forEach(b => {
+                b.classList.remove('bg-stone-700', 'text-white');
+                b.classList.add('bg-white', 'border', 'border-stone-200', 'text-stone-600');
+            });
+
+            // Add active state to clicked button
+            btn.classList.remove('bg-white', 'border', 'border-stone-200', 'text-stone-600');
+            btn.classList.add('bg-stone-700', 'text-white');
+
+            // Here you could filter recipes by category
+            console.log('Switched to category:', category);
+        }
+
+        function addRecipe(btn) {
+            const card = btn.closest('.recipe-card');
+            const isAdded = btn.classList.contains('added');
+            const anchor = card.getAttribute('data-anchor');
+            const behavior = card.getAttribute('data-behavior');
+            const recipeKey = `${anchor}-${behavior}`;
+
+            if (!isAdded) {
+                // Mark as added
+                btn.classList.add('added', 'bg-primary');
+                btn.classList.remove('text-stone-400', 'bg-stone-100');
+                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+                // Save to localStorage
+                saveAddedRecipe(recipeKey);
+
+                // Show feedback
+                if (navigator.vibrate) navigator.vibrate(10);
+            } else {
+                // Remove added state
+                btn.classList.remove('added', 'bg-primary');
+                btn.classList.add('text-stone-400', 'bg-stone-100');
+                btn.innerHTML = '<i data-lucide="plus" class="w-4 h-4 stroke-[2.5px]"></i>';
+                lucide.createIcons();
+
+                // Remove from localStorage
+                removeAddedRecipe(recipeKey);
+
+                // Show feedback
+                if (navigator.vibrate) navigator.vibrate(10);
+            }
+        }
+
+        function searchRecipes(query) {
+            const searchInput = document.getElementById('searchInput');
+            const clearBtn = document.getElementById('clearSearch');
+            const cards = document.querySelectorAll('.recipe-card');
+
+            // Show/hide clear button
+            if (query.trim()) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+
+            // Filter cards
+            const searchTerm = query.toLowerCase().trim();
+            cards.forEach(card => {
+                const anchor = card.getAttribute('data-anchor').toLowerCase();
+                const behavior = card.getAttribute('data-behavior').toLowerCase();
+
+                if (anchor.includes(searchTerm) || behavior.includes(searchTerm)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function clearSearch() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = '';
+            searchRecipes('');
+            searchInput.focus();
+        }
+
+        // LocalStorage functions for added recipes
+        function saveAddedRecipe(recipeKey) {
+            let addedRecipes = JSON.parse(localStorage.getItem('addedRecipes') || '[]');
+            if (!addedRecipes.includes(recipeKey)) {
+                addedRecipes.push(recipeKey);
+                localStorage.setItem('addedRecipes', JSON.stringify(addedRecipes));
+            }
+        }
+
+        function removeAddedRecipe(recipeKey) {
+            let addedRecipes = JSON.parse(localStorage.getItem('addedRecipes') || '[]');
+            addedRecipes = addedRecipes.filter(key => key !== recipeKey);
+            localStorage.setItem('addedRecipes', JSON.stringify(addedRecipes));
+        }
+
+        function restoreAddedRecipes() {
+            const addedRecipes = JSON.parse(localStorage.getItem('addedRecipes') || '[]');
+            document.querySelectorAll('.recipe-card').forEach(card => {
+                const anchor = card.getAttribute('data-anchor');
+                const behavior = card.getAttribute('data-behavior');
+                const recipeKey = `${anchor}-${behavior}`;
+
+                if (addedRecipes.includes(recipeKey)) {
+                    const btn = card.querySelector('.recipe-btn');
+                    btn.classList.add('added', 'bg-primary');
+                    btn.classList.remove('text-stone-400', 'bg-stone-100');
+                    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                }
+            });
+        }
+
+        // Restore added recipes on page load
+        restoreAddedRecipes();
+    </script>
+</body>
+</html>

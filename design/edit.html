@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tiny Habits - Edit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #10B981;
+            --color-primary-light: #D1FAE5;
+            --color-text: #44403C;
+            --color-text-secondary: #A8A29E;
+            --color-border: #E7E5E4;
+        }
+        body { font-family: 'Noto Sans SC', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; }
+
+        /* Dark Mode Styles */
+        body.dark-mode { background-color: #1a1a1a; color: #e7e5e4; }
+        body.dark-mode .bg-stone-50 { background-color: #1a1a1a !important; }
+        body.dark-mode .bg-white { background-color: #2a2a2a !important; }
+        body.dark-mode .text-stone-700 { color: #e7e5e4 !important; }
+        body.dark-mode .text-stone-600 { color: #a8a29e !important; }
+        body.dark-mode .text-stone-400 { color: #78716c !important; }
+        body.dark-mode .border-stone-200 { border-color: #3a3a3a !important; }
+        body.dark-mode .border-stone-100 { border-color: #3a3a3a !important; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .input-focus-ring:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15); }
+        .btn-disabled { background-color: #e7e5e4; color: #a8a29e; cursor: not-allowed; }
+        .btn-active { background-color: var(--color-primary); color: white; }
+        .btn-active:active { transform: scale(0.98); }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#10B981', light: '#D1FAE5' },
+                        stone: { 50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 400: '#a8a29e', 600: '#57534e', 700: '#44403C', 800: '#292524' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-stone-50 text-stone-700 h-screen w-full overflow-hidden flex flex-col">
+    <header class="px-5 pt-12 pb-3 bg-stone-50 z-20 flex justify-between items-center">
+        <a href="detail.html" class="text-stone-400 font-medium text-sm">取消</a>
+        <h1 class="text-base font-bold text-stone-700">编辑配方</h1>
+        <button id="saveBtn" onclick="saveHabit()" class="text-sm font-semibold text-primary">保存</button>
+    </header>
+    <main class="flex-1 overflow-y-auto hide-scrollbar px-5 py-6 pb-10 space-y-6">
+        <!-- Habit Name -->
+        <section>
+            <div class="mb-3">
+                <h2 class="text-base font-bold text-stone-700 mb-1">习惯名称</h2>
+                <p class="text-xs text-stone-400">给你的习惯起个名字</p>
+            </div>
+            <div class="input-focus-ring bg-white p-1 rounded-[12px] border border-stone-200 flex items-center">
+                <div class="w-10 h-10 flex items-center justify-center text-stone-400">
+                    <i data-lucide="edit-3" class="w-5 h-5"></i>
+                </div>
+                <input type="text" id="input-name" value="喝一杯水" class="flex-1 bg-transparent border-none outline-none text-stone-700 font-semibold placeholder-stone-300 h-10 text-[15px]">
+            </div>
+        </section>
+
+        <div class="border-t border-stone-100"></div>
+
+        <!-- Anchor -->
+        <section>
+            <div class="mb-3">
+                <h2 class="text-base font-bold text-stone-700 mb-1">锚点</h2>
+                <p class="text-xs text-stone-400">当...之后</p>
+            </div>
+            <div class="input-focus-ring bg-white p-1 rounded-[12px] border border-stone-200 flex items-center">
+                <div class="w-10 h-10 flex items-center justify-center text-stone-400">
+                    <i data-lucide="anchor" class="w-5 h-5"></i>
+                </div>
+                <input type="text" id="input-anchor" value="双脚落地" class="flex-1 bg-transparent border-none outline-none text-stone-700 font-semibold placeholder-stone-300 h-10 text-[15px]">
+            </div>
+        </section>
+
+        <div class="border-t border-stone-100"></div>
+
+        <!-- Behavior -->
+        <section>
+            <div class="mb-3">
+                <h2 class="text-base font-bold text-stone-700 mb-1">微行为</h2>
+                <p class="text-xs text-stone-400">我会...</p>
+            </div>
+            <div class="input-focus-ring bg-white p-1 rounded-[12px] border border-stone-200 flex items-center">
+                <div class="w-10 h-10 flex items-center justify-center text-stone-400">
+                    <i data-lucide="zap" class="w-5 h-5"></i>
+                </div>
+                <input type="text" id="input-behavior" value="喝一杯水" class="flex-1 bg-transparent border-none outline-none text-stone-700 font-semibold placeholder-stone-300 h-10 text-[15px]">
+            </div>
+        </section>
+
+        <div class="border-t border-stone-100"></div>
+
+        <!-- Celebration -->
+        <section>
+            <div class="mb-3">
+                <h2 class="text-base font-bold text-stone-700 mb-1">庆祝方式</h2>
+                <p class="text-xs text-stone-400">然后...</p>
+            </div>
+            <div class="input-focus-ring bg-white p-1 rounded-[12px] border border-stone-200 flex items-center">
+                <div class="w-10 h-10 flex items-center justify-center text-stone-400">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <input type="text" id="input-celebration" value="对自己微笑" class="flex-1 bg-transparent border-none outline-none text-stone-700 font-semibold placeholder-stone-300 h-10 text-[15px]">
+            </div>
+        </section>
+    </main>
+    <script>
+    lucide.createIcons();
+
+    // Check for saved dark mode preference
+    const isDarkMode = localStorage.getItem('darkMode') === 'true';
+    if (isDarkMode) {
+        document.body.classList.add('dark-mode');
+    }
+
+    function saveHabit() {
+        const name = document.getElementById('input-name').value;
+        const anchor = document.getElementById('input-anchor').value;
+        const behavior = document.getElementById('input-behavior').value;
+        const celebration = document.getElementById('input-celebration').value;
+
+        if (name && anchor && behavior && celebration) {
+            // Here you would save the data
+            // For now, just redirect back to detail page
+            window.location.href = 'detail.html';
+        } else {
+            alert('请填写所有字段');
+        }
+    }
+    </script>
+</body>
+</html>
