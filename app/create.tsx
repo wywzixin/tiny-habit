@@ -1,7 +1,7 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Switch, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Switch, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,7 +11,7 @@ import { celebrations, weekDays } from '../constants';
 import { BottomSheet } from '../components/ui/BottomSheet';
 
 // 习惯库分类
-const habitCategories = ['全部', '推荐', '健康', '学习', '生活', '心理', '社交'];
+const habitCategories = ['全部', '新建', '推荐', '健康', '学习', '生活', '心理', '社交'];
 
 // 习惯库数据
 const habitLibrary = [
@@ -46,14 +46,24 @@ const aiRecommendations = {
 
 export default function CreateScreen() {
   const router = useRouter();
-  const { addMicroBehavior } = useHabitStore();
+  const { editId } = useLocalSearchParams<{ editId?: string }>();
+  const editingId = typeof editId === 'string' ? editId : undefined;
+
+  const {
+    microBehaviors,
+    addMicroBehavior,
+    updateMicroBehavior,
+    userHabitTemplates,
+    addUserHabitTemplate,
+    deleteUserHabitTemplate,
+  } = useHabitStore();
   const isDarkMode = useUserStore((state) => state.isDarkMode);
 
   const [goal, setGoal] = useState('');
   const [behavior, setBehavior] = useState('');
   const [anchor, setAnchor] = useState('');
   const [celebration, setCelebration] = useState('');
-  const [frequency, setFrequency] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [frequency, setFrequency] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
 
   // 习惯库弹窗状态
   const [showLibrary, setShowLibrary] = useState(false);
@@ -75,6 +85,36 @@ export default function CreateScreen() {
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   };
 
+  const editingBehavior = useMemo(() => {
+    if (!editingId) return undefined;
+    return microBehaviors.find((b) => b.id === editingId);
+  }, [editingId, microBehaviors]);
+
+  useEffect(() => {
+    if (!editingId) return;
+    if (!editingBehavior) return;
+
+    setGoal(editingBehavior.name || '');
+    setBehavior(editingBehavior.behavior || '');
+    setAnchor(editingBehavior.anchor || '');
+    setCelebration(editingBehavior.celebration || '');
+    setFrequency(editingBehavior.frequency?.length ? editingBehavior.frequency : [0, 1, 2, 3, 4, 5, 6]);
+
+    const t = editingBehavior.reminderTime;
+    if (t && /^\d{2}:\d{2}$/.test(t)) {
+      const [hh, mm] = t.split(':').map((x) => Number(x));
+      const d = new Date();
+      d.setHours(hh);
+      d.setMinutes(mm);
+      d.setSeconds(0);
+      d.setMilliseconds(0);
+      setReminderTime(d);
+      setReminderEnabled(true);
+    } else {
+      setReminderEnabled(Boolean(editingBehavior.reminderEnabled));
+    }
+  }, [editingBehavior, editingId]);
+
   const onTimeChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
       setShowTimePicker(false);
@@ -86,11 +126,29 @@ export default function CreateScreen() {
 
   const canCreate = behavior && anchor && celebration && frequency.length > 0;
 
-  // 筛选习惯库
-  const filteredHabits = habitLibrary.filter(
-    h => libraryCategory === '全部' || h.category === libraryCategory
-  );
-  const displayedHabits = filteredHabits.filter((h) => {
+  const systemHabits = habitLibrary.map((h, idx) => ({
+    id: `sys-${idx}`,
+    ...h,
+    source: 'system' as const,
+  }));
+  const myHabits = userHabitTemplates.map((h) => ({
+    id: h.id,
+    name: h.name,
+    desc: h.desc,
+    icon: h.icon,
+    iconBg: h.iconBg,
+    category: '新建',
+    source: 'user' as const,
+  }));
+
+  const baseHabits =
+    libraryCategory === '新建'
+      ? myHabits
+      : libraryCategory === '全部'
+        ? [...myHabits, ...systemHabits]
+        : systemHabits.filter((h) => h.category === libraryCategory);
+
+  const displayedHabits = baseHabits.filter((h) => {
     const q = librarySearch.trim();
     if (!q) return true;
     return h.name.includes(q) || h.desc.includes(q);
@@ -108,6 +166,20 @@ export default function CreateScreen() {
     setFrequency((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
     );
+  };
+
+  const handleDeleteUserHabit = (id: string, name: string) => {
+    Alert.alert('删除习惯', `确定删除“${name}”吗？`, [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '删除',
+        style: 'destructive',
+        onPress: () => {
+          deleteUserHabitTemplate(id);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        },
+      },
+    ]);
   };
 
   const handleCreate = () => {
@@ -128,9 +200,36 @@ export default function CreateScreen() {
       isActive: true,
     });
 
+    const goalName = goal.trim();
+    if (goalName) {
+      const isSystem = systemHabits.some((h) => h.name.trim() === goalName);
+      if (!isSystem) addUserHabitTemplate(goalName);
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.back();
   };
+
+  const handleUpdate = () => {
+    if (!editingId) return;
+    if (!editingBehavior) return;
+    if (!canCreate) return;
+
+    updateMicroBehavior(editingId, {
+      name: goal.trim() || behavior.trim(),
+      anchor,
+      behavior,
+      celebration,
+      frequency,
+      reminderEnabled,
+      reminderTime: reminderEnabled ? formatTime(reminderTime) : undefined,
+    });
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.back();
+  };
+
+  const handleSubmit = editingId ? handleUpdate : handleCreate;
 
   return (
     <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg">
@@ -150,11 +249,28 @@ export default function CreateScreen() {
               {todayLabel}
             </Text>
             <Text className="text-base font-extrabold text-appText dark:text-appDarkText mt-0.5">
-              新建配方
+              {editingId ? '编辑配方' : '新建配方'}
             </Text>
           </View>
 
-          <View className="w-12" />
+          {editingId ? (
+            <TouchableOpacity
+              onPress={handleUpdate}
+              activeOpacity={0.85}
+              className={`px-3 py-2 rounded-2xl ${
+                canCreate ? 'bg-appText dark:bg-appDarkText' : 'bg-appBorder dark:bg-appDarkBorder'
+              }`}
+              disabled={!canCreate}
+            >
+              <Text className={`text-[12px] font-extrabold ${
+                canCreate ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
+              }`}>
+                保存
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <View className="w-12" />
+          )}
         </View>
       </View>
 
@@ -400,7 +516,7 @@ export default function CreateScreen() {
           </Text>
         </View>
         <TouchableOpacity
-          onPress={handleCreate}
+          onPress={handleSubmit}
           disabled={!canCreate}
           activeOpacity={0.9}
           className={`py-4 rounded-[22px] items-center ${
@@ -408,7 +524,7 @@ export default function CreateScreen() {
           }`}
         >
           <Text className={`font-extrabold text-base ${canCreate ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'}`}>
-            确认创建
+            {editingId ? '保存修改' : '确认创建'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -471,7 +587,7 @@ export default function CreateScreen() {
 
           <View className="flex-row items-center justify-between mt-4">
             <Text className="text-[12px] font-extrabold text-appText dark:text-appDarkText">
-              推荐习惯
+              {libraryCategory === '新建' ? '我创建的' : libraryCategory === '全部' ? '全部习惯' : '系统推荐'}
             </Text>
             <View className="px-3 py-1.5 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder">
               <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
@@ -508,11 +624,11 @@ export default function CreateScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              displayedHabits.map((habit, index) => {
+              displayedHabits.map((habit) => {
                 const selected = goal === habit.name;
                 return (
                   <TouchableOpacity
-                    key={index}
+                    key={habit.id}
                     onPress={() => selectHabitFromLibrary(habit.name)}
                     activeOpacity={0.92}
                     className={`p-4 rounded-[22px] border flex-row items-center ${
@@ -542,16 +658,27 @@ export default function CreateScreen() {
                         {habit.desc}
                       </Text>
                     </View>
-                    <View className={`w-10 h-10 rounded-full items-center justify-center border ${
-                      selected
-                        ? 'bg-primary border-primary'
-                        : 'bg-appBg dark:bg-appDarkBg border-appBorder dark:border-appDarkBorder'
-                    }`}>
-                      <Ionicons
-                        name={selected ? 'checkmark' : 'add'}
-                        size={20}
-                        color={selected ? 'white' : (isDarkMode ? '#d6d3d1' : '#78716c')}
-                      />
+                    <View className="flex-row items-center gap-2">
+                      <View className={`w-10 h-10 rounded-full items-center justify-center border ${
+                        selected
+                          ? 'bg-primary border-primary'
+                          : 'bg-appBg dark:bg-appDarkBg border-appBorder dark:border-appDarkBorder'
+                      }`}>
+                        <Ionicons
+                          name={selected ? 'checkmark' : 'add'}
+                          size={20}
+                          color={selected ? 'white' : (isDarkMode ? '#d6d3d1' : '#78716c')}
+                        />
+                      </View>
+                      {habit.source === 'user' && (
+                        <TouchableOpacity
+                          onPress={() => handleDeleteUserHabit(habit.id, habit.name)}
+                          activeOpacity={0.85}
+                          className="w-10 h-10 rounded-full items-center justify-center border border-red-100 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10"
+                        >
+                          <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </TouchableOpacity>
                 );

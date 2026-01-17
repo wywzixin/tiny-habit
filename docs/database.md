@@ -31,14 +31,12 @@
 ```sql
 CREATE TABLE `user` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `username` VARCHAR(50) DEFAULT NULL,
-  `display_name` VARCHAR(50) NOT NULL DEFAULT '用户',
-  `email` VARCHAR(100) DEFAULT NULL,
-  `phone` VARCHAR(20) DEFAULT NULL,
-  `password_hash` VARCHAR(255) DEFAULT NULL,
+  `username` VARCHAR(50) NOT NULL,
+  `email` VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
+  `phone` VARCHAR(20) DEFAULT NULL COMMENT '手机号',
+  `password_hash` VARCHAR(255) NOT NULL,
   `avatar_url` VARCHAR(255) DEFAULT NULL,
-  `gender` ENUM('male','female','unknown') DEFAULT 'unknown',
-  `status` ENUM('active','disabled') NOT NULL DEFAULT 'active',
+  `gender` ENUM('male', 'female', 'unknown') DEFAULT 'unknown' COMMENT '性别',
   `level` INT UNSIGNED DEFAULT 1,
   `total_points` INT UNSIGNED DEFAULT 0,
   `available_points` INT UNSIGNED DEFAULT 0,
@@ -50,68 +48,12 @@ CREATE TABLE `user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
-### 2.1.1 用户认证身份表（user_auth_identity）
-
-> 用于支持邮箱/手机号密码登录，以及 QQ/微博/Apple 等第三方登录的账号绑定。
-
-```sql
-CREATE TABLE `user_auth_identity` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `provider` ENUM('password','qq','weibo','apple') NOT NULL,
-  `identifier` VARCHAR(120) DEFAULT NULL COMMENT '邮箱或手机号（password 模式）',
-  `provider_user_id` VARCHAR(128) DEFAULT NULL COMMENT '第三方平台用户唯一标识',
-  `is_primary` TINYINT(1) DEFAULT 0,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_provider_identifier` (`provider`, `identifier`),
-  UNIQUE KEY `uk_provider_user_id` (`provider`, `provider_user_id`),
-  KEY `idx_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-```
-
-### 2.1.2 用户会话表（user_session）
-
-> App 登录后的会话/令牌管理表（可用于多端登录、退出登录、会话过期）。
-
-```sql
-CREATE TABLE `user_session` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `access_token` VARCHAR(255) NOT NULL,
-  `expires_at` TIMESTAMP NOT NULL,
-  `device_id` VARCHAR(64) DEFAULT NULL,
-  `platform` ENUM('ios','android','web') DEFAULT NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_access_token` (`access_token`),
-  KEY `idx_user_id` (`user_id`),
-  KEY `idx_expires_at` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-```
-
-### 2.1.3 密码重置表（password_reset）
-
-> 用于“忘记密码”流程（短信验证码版本不做时也可通过邮件/站内验证扩展）。
-
-```sql
-CREATE TABLE `password_reset` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `provider` ENUM('email','phone') NOT NULL,
-  `identifier` VARCHAR(120) NOT NULL,
-  `token` VARCHAR(255) NOT NULL,
-  `expires_at` TIMESTAMP NOT NULL,
-  `used_at` TIMESTAMP DEFAULT NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_token` (`token`),
-  KEY `idx_user_id` (`user_id`),
-  KEY `idx_identifier` (`identifier`),
-  KEY `idx_expires_at` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-```
+**字段说明：**
+| 字段 | 类型 | 说明 |
+|-----|------|------|
+| email | VARCHAR(100) | 邮箱（可为空，与phone二选一） |
+| phone | VARCHAR(20) | 手机号（可为空，与email二选一） |
+| gender | ENUM | 性别：male/female/unknown |
 
 ### 2.2 习惯表（habit）- 父习惯
 
@@ -306,3 +248,4 @@ CREATE TABLE `behavior_recipe_template` (
 **说明：** 习惯库和配方模板库是两个独立的模板表，无关联关系。
 - 习惯库：对应父级习惯
 - 配方模板库：对应子级微行为配方
+

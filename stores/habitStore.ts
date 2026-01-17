@@ -3,10 +3,20 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MicroBehavior, CheckIn } from '../types';
 
+type UserHabitTemplate = {
+  id: string;
+  name: string;
+  desc: string;
+  icon: string;
+  iconBg: string;
+  createdAt: string;
+};
+
 interface HabitState {
   microBehaviors: MicroBehavior[];
   checkIns: CheckIn[];
   todayCheckIns: string[];
+  userHabitTemplates: UserHabitTemplate[];
 
   // Actions
   addMicroBehavior: (behavior: Omit<MicroBehavior, 'id' | 'createdAt' | 'updatedAt'>) => void;
@@ -17,6 +27,8 @@ interface HabitState {
   isCheckedToday: (microBehaviorId: string) => boolean;
   getTodayBehaviors: () => MicroBehavior[];
   resetToSample: () => void;
+  addUserHabitTemplate: (name: string) => void;
+  deleteUserHabitTemplate: (id: string) => void;
 }
 
 // 示例数据 - 确保每天都能显示
@@ -45,6 +57,7 @@ export const useHabitStore = create<HabitState>()(
       microBehaviors: sampleMicroBehaviors,
       checkIns: [],
       todayCheckIns: [],
+      userHabitTemplates: [],
 
       addMicroBehavior: (behavior) => {
         const newBehavior: MicroBehavior = {
@@ -107,6 +120,38 @@ export const useHabitStore = create<HabitState>()(
       resetToSample: () => {
         set({ microBehaviors: sampleMicroBehaviors, checkIns: [], todayCheckIns: [] });
       },
+
+      addUserHabitTemplate: (name) => {
+        const trimmed = name.trim();
+        if (!trimmed) return;
+
+        const exists = get().userHabitTemplates.some(
+          (h) => h.name.trim().toLowerCase() === trimmed.toLowerCase()
+        );
+        if (exists) return;
+
+        const iconBgPalette = ['#DBEAFE', '#D1FAE5', '#FEF3C7', '#FCE7F3', '#CFFAFE', '#EDE9FE'];
+        const nextBg = iconBgPalette[get().userHabitTemplates.length % iconBgPalette.length];
+
+        const newHabit: UserHabitTemplate = {
+          id: Date.now().toString(),
+          name: trimmed,
+          desc: '我创建的习惯',
+          icon: '✨',
+          iconBg: nextBg,
+          createdAt: new Date().toISOString(),
+        };
+
+        set((state) => ({
+          userHabitTemplates: [newHabit, ...state.userHabitTemplates],
+        }));
+      },
+
+      deleteUserHabitTemplate: (id) => {
+        set((state) => ({
+          userHabitTemplates: state.userHabitTemplates.filter((h) => h.id !== id),
+        }));
+      },
     }),
     {
       name: 'habit-storage',
@@ -123,6 +168,7 @@ export const useHabitStore = create<HabitState>()(
           microBehaviors: hasBehaviors ? persisted.microBehaviors : sampleMicroBehaviors,
           todayCheckIns: persisted?.todayCheckIns || [],
           checkIns: persisted?.checkIns || [],
+          userHabitTemplates: persisted?.userHabitTemplates || [],
         };
       },
     }
