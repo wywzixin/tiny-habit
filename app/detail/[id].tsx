@@ -1,102 +1,167 @@
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useHabitStore } from '../../stores';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useHabitStore, useUserStore } from '../../stores';
 
 export default function DetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { microBehaviors, checkIns, deleteMicroBehavior } = useHabitStore();
+  const isDarkMode = useUserStore((state) => state.isDarkMode);
 
   const behavior = microBehaviors.find((b) => b.id === id);
   const behaviorCheckIns = checkIns.filter((c) => c.microBehaviorId === id);
 
   if (!behavior) {
     return (
-      <SafeAreaView className="flex-1 bg-stone-50 items-center justify-center">
-        <Text className="text-stone-400">习惯不存在</Text>
+      <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg items-center justify-center">
+        <Text className="text-appMuted dark:text-appDarkMuted">习惯不存在</Text>
       </SafeAreaView>
     );
   }
 
+  const todayLabel = new Date().toLocaleDateString('zh-CN', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+  });
+
   const handleDelete = () => {
-    deleteMicroBehavior(id);
-    router.back();
+    Alert.alert('删除习惯', '确定删除这个习惯配方吗？', [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '删除',
+        style: 'destructive',
+        onPress: () => {
+          deleteMicroBehavior(id);
+          router.back();
+        },
+      },
+    ]);
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50">
-      {/* Header */}
-      <View className="px-5 py-3 flex-row justify-between items-center">
-        <TouchableOpacity onPress={() => router.back()} className="p-1 -ml-1">
-          <Ionicons name="arrow-back" size={24} color="#57534e" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push(`/edit/${id}`)}>
-          <Text className="text-sm font-medium text-stone-400">编辑</Text>
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg">
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
+      >
+        <View className="pt-2 pb-4">
+          <View className="flex-row items-start justify-between">
+            <View>
+              <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
+                {todayLabel}
+              </Text>
+              <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
+                习惯详情
+              </Text>
+            </View>
 
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        {/* Title */}
-        <View className="items-center py-4">
-          <Text className="text-xl font-bold text-stone-700 mb-1">
-            {behavior.behavior}
-          </Text>
-          <Text className="text-sm text-stone-400">当 {behavior.anchor} 后</Text>
-        </View>
-
-        {/* Stats */}
-        <View className="flex-row gap-3 mb-5">
-          <View className="flex-1 bg-white p-4 rounded-2xl border border-stone-200 items-center">
-            <Text className="text-[10px] text-stone-400 font-medium mb-1">打卡天数</Text>
-            <Text className="text-2xl font-bold text-stone-700">
-              {behaviorCheckIns.length}
-            </Text>
+            <View className="flex-row items-center gap-2">
+              <TouchableOpacity
+                onPress={() => router.push(`/edit/${id}`)}
+                activeOpacity={0.85}
+                className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
+              >
+                <Ionicons name="create-outline" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => router.back()}
+                activeOpacity={0.85}
+                className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
+              >
+                <Ionicons name="arrow-back" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+              </TouchableOpacity>
+            </View>
           </View>
-          <View className="flex-1 bg-white p-4 rounded-2xl border border-stone-200 items-center">
-            <Text className="text-[10px] text-stone-400 font-medium mb-1">行动值</Text>
-            <Text className="text-2xl font-bold text-primary">
-              {behaviorCheckIns.length}
-            </Text>
-          </View>
-        </View>
 
-        {/* Recipe Card */}
-        <View className="bg-white p-5 rounded-[20px] border border-stone-200 mb-5">
-          <Text className="text-xs font-semibold text-stone-400 uppercase mb-4">
-            配方详情
-          </Text>
-          <View className="gap-4">
-            <View className="flex-row items-center gap-3">
-              <View className="w-9 h-9 rounded-full bg-stone-100 items-center justify-center">
-                <Text className="text-lg">🛌</Text>
+          <View className="mt-4">
+            <LinearGradient
+              colors={isDarkMode ? ['#059669', '#10B981'] : ['#10B981', '#34D399']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ borderRadius: 22, padding: 16 }}
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-1 pr-3">
+                  <View className="flex-row items-center gap-2">
+                    <View className="px-2.5 py-1 rounded-full bg-white/15">
+                      <Text className="text-white text-[11px] font-bold">我的配方</Text>
+                    </View>
+                    <View className="px-2.5 py-1 rounded-full bg-white/15">
+                      <Text className="text-white text-[11px] font-bold">当 {behavior.anchor} 后</Text>
+                    </View>
+                  </View>
+                  <Text className="text-white text-[20px] font-extrabold mt-3" numberOfLines={2}>
+                    {behavior.behavior}
+                  </Text>
+                </View>
+                <View className="w-12 h-12 rounded-2xl bg-white/18 items-center justify-center">
+                  <Text className="text-2xl">{behavior.icon || '✨'}</Text>
+                </View>
               </View>
-              <View>
-                <Text className="text-[10px] text-stone-400 font-medium">锚点</Text>
-                <Text className="text-sm font-semibold text-stone-700">
-                  当{behavior.anchor}后
+            </LinearGradient>
+          </View>
+        </View>
+
+        <View className="flex-row gap-3 mb-6">
+          <View className="flex-1 bg-appCard dark:bg-appDarkCard p-5 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
+            <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mb-1">打卡天数</Text>
+            <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">
+              {behaviorCheckIns.length}
+            </Text>
+          </View>
+          <View className="flex-1 bg-appCard dark:bg-appDarkCard p-5 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
+            <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mb-1">行动值</Text>
+            <Text className="text-2xl font-extrabold text-primary">
+              {behaviorCheckIns.length}
+            </Text>
+          </View>
+        </View>
+
+        <View className="mb-5">
+          <Text className="text-base font-extrabold text-appText dark:text-appDarkText mb-3">
+            配方
+          </Text>
+          <View className="bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder gap-3">
+            <View className="flex-row items-center gap-3">
+              <View className="w-11 h-11 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
+                <Text className="text-[20px]">⏰</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">锚点</Text>
+                <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText">
+                  {behavior.anchor}
                 </Text>
               </View>
             </View>
+
+            <View className="h-px bg-appBorder dark:bg-appDarkBorder" />
+
             <View className="flex-row items-center gap-3">
-              <View className="w-9 h-9 rounded-full bg-primary-light items-center justify-center">
-                <Text className="text-lg">💧</Text>
+              <View className="w-11 h-11 rounded-[16px] bg-primary/10 dark:bg-primary/15 border border-primary/20 dark:border-primary/25 items-center justify-center">
+                <Text className="text-[20px]">⚡</Text>
               </View>
-              <View>
-                <Text className="text-[10px] text-primary font-medium">微行为</Text>
-                <Text className="text-sm font-semibold text-stone-700">
+              <View className="flex-1">
+                <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">微行为</Text>
+                <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText">
                   {behavior.behavior}
                 </Text>
               </View>
             </View>
+
+            <View className="h-px bg-appBorder dark:bg-appDarkBorder" />
+
             <View className="flex-row items-center gap-3">
-              <View className="w-9 h-9 rounded-full bg-stone-100 items-center justify-center">
-                <Text className="text-lg">✨</Text>
+              <View className="w-11 h-11 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
+                <Text className="text-[20px]">🎉</Text>
               </View>
-              <View>
-                <Text className="text-[10px] text-stone-400 font-medium">庆祝</Text>
-                <Text className="text-sm font-semibold text-stone-700">
+              <View className="flex-1">
+                <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">庆祝</Text>
+                <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText">
                   {behavior.celebration}
                 </Text>
               </View>
@@ -104,12 +169,12 @@ export default function DetailScreen() {
           </View>
         </View>
 
-        {/* Delete Button */}
         <TouchableOpacity
           onPress={handleDelete}
-          className="py-3 rounded-xl border border-red-100 bg-red-50/50 mb-8"
+          activeOpacity={0.9}
+          className="py-4 rounded-[22px] border border-red-200/70 dark:border-red-500/30 bg-red-50/60 dark:bg-red-500/10 items-center"
         >
-          <Text className="text-sm font-medium text-red-400 text-center">
+          <Text className="text-[14px] font-extrabold text-red-500">
             删除此配方
           </Text>
         </TouchableOpacity>

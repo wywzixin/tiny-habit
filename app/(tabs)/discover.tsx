@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useUserStore } from '../../stores';
 
 const categories = ['全部', '健康', '生活', '心理', '效率'];
 
@@ -22,9 +23,16 @@ const recipes = [
 ];
 
 export default function DiscoverScreen() {
+  const isDarkMode = useUserStore((state) => state.isDarkMode);
   const [search, setSearch] = useState('');
   const [addedIds, setAddedIds] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('全部');
+
+  const todayLabel = new Date().toLocaleDateString('zh-CN', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+  });
 
   const filteredRecipes = recipes.filter((r) => {
     const matchesSearch = r.anchor.includes(search) || r.behavior.includes(search);
@@ -45,84 +53,140 @@ export default function DiscoverScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-800">
-      <View className="px-5 py-3">
-        <Text className="text-xl font-bold text-stone-700 dark:text-stone-100 mb-3">发现</Text>
+    <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg">
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
+      >
+        <View className="pt-2 pb-4">
+          <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
+            {todayLabel}
+          </Text>
+          <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
+            发现
+          </Text>
+          <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-1">
+            从配方库里挑几条最简单的开始
+          </Text>
 
-        {/* Search */}
-        <View className="bg-white dark:bg-stone-700 rounded-xl border border-stone-200 dark:border-stone-600 flex-row items-center px-3 py-2 mb-3">
-          <Ionicons name="search" size={16} color="#a8a29e" />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="搜索习惯..."
-            className="flex-1 ml-2 text-sm text-stone-700 dark:text-stone-100"
-            placeholderTextColor="#a8a29e"
-          />
+          <View className="mt-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder px-4 py-3 flex-row items-center">
+            <Ionicons name="search" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="搜索锚点或微行为..."
+              className="flex-1 ml-2 text-[14px] font-semibold text-appText dark:text-appDarkText"
+              placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
+              returnKeyType="search"
+            />
+            {search.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearch('')}
+                activeOpacity={0.85}
+                className="w-8 h-8 rounded-full bg-appBg dark:bg-appDarkCard items-center justify-center border border-appBorder dark:border-appDarkBorder"
+              >
+                <Ionicons name="close" size={16} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mt-3"
+          >
+            <View className="flex-row gap-2 pr-3">
+              {categories.map((category) => {
+                const active = selectedCategory === category;
+                return (
+                  <TouchableOpacity
+                    key={category}
+                    onPress={() => handleCategoryChange(category)}
+                    activeOpacity={0.85}
+                    className={`px-4 py-2 rounded-full border ${
+                      active
+                        ? 'bg-appText dark:bg-appDarkText border-appText dark:border-appDarkText'
+                        : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
+                    }`}
+                  >
+                    <Text
+                      className={`text-[12px] font-bold ${
+                        active ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
+                      }`}
+                    >
+                      {category}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
         </View>
 
-        {/* Category Tabs */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mb-2"
-        >
-          <View className="flex-row gap-2">
-            {categories.map((category) => (
-              <TouchableOpacity
-                key={category}
-                onPress={() => handleCategoryChange(category)}
-                className={`px-3 py-1.5 rounded-lg ${
-                  selectedCategory === category
-                    ? 'bg-stone-700 dark:bg-primary'
-                    : 'bg-white dark:bg-stone-700 border border-stone-200 dark:border-stone-600'
-                }`}
+        <View className="flex-row items-center justify-between mb-3">
+          <View>
+            <Text className="text-base font-extrabold text-appText dark:text-appDarkText">
+              推荐配方
+            </Text>
+            <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-0.5">
+              轻轻一点就能加入今天
+            </Text>
+          </View>
+          <View className="px-3 py-1.5 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder">
+            <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
+              {filteredRecipes.length} 条
+            </Text>
+          </View>
+        </View>
+
+        <View className="gap-3">
+          {filteredRecipes.map((recipe) => {
+            const added = addedIds.includes(recipe.id);
+            return (
+              <View
+                key={recipe.id}
+                className="bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder flex-row items-center"
               >
-                <Text
-                  className={`text-xs font-medium ${
-                    selectedCategory === category ? 'text-white' : 'text-stone-600 dark:text-stone-300'
+                <View className="w-12 h-12 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
+                  <Text className="text-[22px]">{recipe.icon}</Text>
+                </View>
+
+                <View className="flex-1">
+                  <View className="flex-row items-center gap-2">
+                    <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText" numberOfLines={1}>
+                      {recipe.anchor}
+                    </Text>
+                    <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
+                      <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
+                        {recipe.category}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-2" numberOfLines={2}>
+                    {recipe.behavior}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => toggleAdd(recipe.id)}
+                  activeOpacity={0.85}
+                  className={`w-10 h-10 rounded-full items-center justify-center border ${
+                    added
+                      ? 'bg-primary border-primary'
+                      : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
                   }`}
                 >
-                  {category}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
-      </View>
-
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        <View className="gap-3 pb-8">
-          {filteredRecipes.map((recipe) => (
-            <View
-              key={recipe.id}
-              className="bg-white dark:bg-stone-700 p-4 rounded-2xl border border-stone-200 dark:border-stone-600 flex-row items-center"
-            >
-              <View className="w-10 h-10 rounded-full bg-stone-100 dark:bg-stone-600 items-center justify-center mr-3">
-                <Text className="text-xl">{recipe.icon}</Text>
+                  <Ionicons
+                    name={added ? 'checkmark' : 'add'}
+                    size={20}
+                    color={added ? 'white' : (isDarkMode ? '#d6d3d1' : '#78716c')}
+                  />
+                </TouchableOpacity>
               </View>
-              <View className="flex-1">
-                <Text className="text-sm font-semibold text-stone-700 dark:text-stone-100">
-                  {recipe.anchor}
-                </Text>
-                <Text className="text-xs text-stone-400 dark:text-stone-400 mt-0.5">
-                  {recipe.behavior}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => toggleAdd(recipe.id)}
-                className={`w-8 h-8 rounded-full items-center justify-center ${
-                  addedIds.includes(recipe.id) ? 'bg-primary' : 'bg-stone-100 dark:bg-stone-600'
-                }`}
-              >
-                <Ionicons
-                  name={addedIds.includes(recipe.id) ? 'checkmark' : 'add'}
-                  size={16}
-                  color={addedIds.includes(recipe.id) ? 'white' : '#a8a29e'}
-                />
-              </TouchableOpacity>
-            </View>
-          ))}
+            );
+          })}
         </View>
       </ScrollView>
     </SafeAreaView>

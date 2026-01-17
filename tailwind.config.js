@@ -9,6 +9,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        appBg: '#F2F2F7',
+        appCard: '#FFFFFF',
+        appBorder: '#E7E5E4',
+        appText: '#0C0A09',
+        appMuted: '#78716c',
+        appDarkBg: '#0B0B0F',
+        appDarkCard: '#17171C',
+        appDarkBorder: '#2A2A33',
+        appDarkText: '#FAFAF9',
+        appDarkMuted: '#A8A29E',
         primary: {
           DEFAULT: '#10B981',
           light: '#D1FAE5',

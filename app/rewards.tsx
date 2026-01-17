@@ -1,22 +1,30 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useUserStore, useRewardStore } from '../stores';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BottomSheet } from '../components/ui/BottomSheet';
 
 const icons = ['📚', '🎬', '🎮', '☕', '🍰', '🎁', '✈️', '🎸', '👕', '💄', '🎨', '🏃'];
 
 export default function RewardsScreen() {
   const router = useRouter();
-  const { availablePoints, totalPoints, redeemedPoints, redeemPoints } = useUserStore();
+  const { availablePoints, totalPoints, redeemedPoints, redeemPoints, isDarkMode } = useUserStore();
   const { rewards, addReward, redeemReward } = useRewardStore();
 
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
   const [cost, setCost] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('📚');
+
+  const todayLabel = new Date().toLocaleDateString('zh-CN', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+  });
 
   const handleAddReward = () => {
     if (!name || !cost) return;
@@ -35,155 +43,201 @@ export default function RewardsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50">
-      {/* Header */}
-      <View className="px-5 py-3 flex-row justify-between items-center">
-        <TouchableOpacity onPress={() => router.back()} className="p-1 -ml-1">
-          <Ionicons name="arrow-back" size={24} color="#57534e" />
-        </TouchableOpacity>
-        <Text className="text-base font-bold text-stone-700">奖励中心</Text>
-        <View className="w-8" />
-      </View>
+    <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg">
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
+      >
+        <View className="pt-2 pb-4">
+          <View className="flex-row items-start justify-between">
+            <View>
+              <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
+                {todayLabel}
+              </Text>
+              <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
+                奖励中心
+              </Text>
+            </View>
 
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        {/* Points Stats */}
-        <View className="flex-row gap-3 mb-5">
-          <View className="flex-1 bg-white p-4 rounded-2xl border border-stone-200 items-center">
-            <Text className="text-[10px] text-stone-400 font-medium mb-1">可用</Text>
-            <Text className="text-2xl font-bold text-primary">{availablePoints}</Text>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              activeOpacity={0.85}
+              className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
+            >
+              <Ionicons name="arrow-back" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+            </TouchableOpacity>
           </View>
-          <View className="flex-1 bg-white p-4 rounded-2xl border border-stone-200 items-center">
-            <Text className="text-[10px] text-stone-400 font-medium mb-1">累计</Text>
-            <Text className="text-2xl font-bold text-stone-700">{totalPoints}</Text>
-          </View>
-          <View className="flex-1 bg-white p-4 rounded-2xl border border-stone-200 items-center">
-            <Text className="text-[10px] text-stone-400 font-medium mb-1">已兑换</Text>
-            <Text className="text-2xl font-bold text-stone-400">{redeemedPoints}</Text>
+
+          <View className="mt-4">
+            <LinearGradient
+              colors={isDarkMode ? ['#059669', '#10B981'] : ['#10B981', '#34D399']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ borderRadius: 22, padding: 16 }}
+            >
+              <View className="flex-row items-center justify-between">
+                <View>
+                  <Text className="text-white/90 text-[11px] font-bold">可用行动值</Text>
+                  <Text className="text-white text-4xl font-extrabold mt-1">{availablePoints}</Text>
+                </View>
+                <View className="w-12 h-12 rounded-2xl bg-white/18 items-center justify-center">
+                  <Text className="text-2xl">🎁</Text>
+                </View>
+              </View>
+              <View className="mt-4 flex-row gap-2">
+                <View className="px-3 py-2 rounded-2xl bg-white/15">
+                  <Text className="text-white/90 text-[11px] font-bold">累计 {totalPoints}</Text>
+                </View>
+                <View className="px-3 py-2 rounded-2xl bg-white/15">
+                  <Text className="text-white/90 text-[11px] font-bold">已兑换 {redeemedPoints}</Text>
+                </View>
+              </View>
+            </LinearGradient>
           </View>
         </View>
 
-        {/* Add Button */}
         <View className="flex-row items-center justify-between mb-4">
-          <Text className="text-sm font-semibold text-stone-700">我的奖励</Text>
+          <Text className="text-base font-extrabold text-appText dark:text-appDarkText">
+            我的奖励
+          </Text>
           <TouchableOpacity
             onPress={() => setShowModal(true)}
-            className="flex-row items-center gap-1 px-3 py-1.5 bg-primary rounded-lg"
+            activeOpacity={0.85}
+            className="flex-row items-center gap-2 px-4 py-2 rounded-full bg-appText dark:bg-appDarkText"
           >
-            <Ionicons name="add" size={14} color="white" />
-            <Text className="text-xs font-medium text-white">添加奖励</Text>
+            <Ionicons name="add" size={16} color={isDarkMode ? '#0c0a09' : 'white'} />
+            <Text className="text-[12px] font-extrabold text-white dark:text-appText">
+              添加奖励
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Rewards List */}
         {rewards.length === 0 ? (
-          <View className="bg-white p-8 rounded-[20px] border border-stone-200 items-center">
-            <Ionicons name="gift" size={32} color="#d6d3d1" />
-            <Text className="text-sm text-stone-400 mt-3 mb-1">还没有奖励</Text>
-            <Text className="text-xs text-stone-300">为自己设定一个奖励目标吧</Text>
+          <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
+            <Text className="text-4xl mb-3">🎁</Text>
+            <Text className="text-sm font-extrabold text-appText dark:text-appDarkText">
+              还没有奖励
+            </Text>
+            <Text className="text-xs font-semibold text-appMuted dark:text-appDarkMuted mt-2 text-center leading-relaxed">
+              给自己一个小目标，达成后更有动力
+            </Text>
           </View>
         ) : (
-          <View className="gap-3 pb-8">
-            {rewards.map((reward) => (
-              <View
-                key={reward.id}
-                className={`bg-white p-4 rounded-2xl border border-stone-200 ${
-                  reward.status === 'redeemed' ? 'opacity-60' : ''
-                }`}
-              >
-                <View className="flex-row items-center gap-3">
-                  <View className="w-12 h-12 rounded-xl bg-stone-100 items-center justify-center">
-                    <Text className="text-2xl">{reward.icon}</Text>
-                  </View>
-                  <View className="flex-1">
-                    <Text className={`text-sm font-bold text-stone-700 ${
-                      reward.status === 'redeemed' ? 'line-through' : ''
-                    }`}>
-                      {reward.name}
-                    </Text>
-                    <Text className="text-xs text-stone-400 mt-0.5">
-                      需要 {reward.cost} 行动值
-                    </Text>
-                  </View>
-                  {reward.status === 'redeemed' ? (
-                    <View className="px-3 py-1.5 bg-stone-100 rounded-lg">
-                      <Text className="text-xs font-medium text-stone-400">已兑换</Text>
+          <View className="gap-3">
+            {rewards.map((reward) => {
+              const redeemed = reward.status === 'redeemed';
+              const canRedeem = availablePoints >= reward.cost;
+
+              return (
+                <View
+                  key={reward.id}
+                  className={`bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder ${
+                    redeemed ? 'opacity-60' : ''
+                  }`}
+                >
+                  <View className="flex-row items-center gap-3">
+                    <View className="w-12 h-12 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
+                      <Text className="text-[22px]">{reward.icon}</Text>
                     </View>
-                  ) : (
-                    <TouchableOpacity
-                      onPress={() => handleRedeem(reward.id, reward.cost)}
-                      disabled={availablePoints < reward.cost}
-                      className={`px-3 py-1.5 rounded-lg ${
-                        availablePoints >= reward.cost ? 'bg-primary' : 'bg-stone-100'
-                      }`}
-                    >
-                      <Text className={`text-xs font-medium ${
-                        availablePoints >= reward.cost ? 'text-white' : 'text-stone-400'
+
+                    <View className="flex-1">
+                      <Text className={`text-[15px] font-extrabold text-appText dark:text-appDarkText ${
+                        redeemed ? 'line-through' : ''
                       }`}>
-                        兑换
+                        {reward.name}
                       </Text>
-                    </TouchableOpacity>
-                  )}
+                      <View className="mt-2 flex-row items-center gap-2">
+                        <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
+                          <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
+                            {reward.cost} 行动值
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {redeemed ? (
+                      <View className="px-3 py-2 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
+                        <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
+                          已兑换
+                        </Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={() => handleRedeem(reward.id, reward.cost)}
+                        disabled={!canRedeem}
+                        activeOpacity={0.85}
+                        className={`px-4 py-2 rounded-full ${
+                          canRedeem ? 'bg-appText dark:bg-appDarkText' : 'bg-appBorder dark:bg-appDarkBorder'
+                        }`}
+                      >
+                        <Text className={`text-[12px] font-extrabold ${
+                          canRedeem ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
+                        }`}>
+                          兑换
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
       </ScrollView>
 
-      {/* Add Modal */}
-      <Modal visible={showModal} transparent animationType="slide">
-        <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-white rounded-t-3xl p-5 pb-8">
-            <View className="flex-row items-center justify-between mb-5">
-              <Text className="text-lg font-bold text-stone-700">添加奖励</Text>
-              <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Ionicons name="close" size={24} color="#a8a29e" />
+      <BottomSheet
+        visible={showModal}
+        title="添加奖励"
+        onClose={() => setShowModal(false)}
+      >
+        <View className="px-5 pb-8">
+          <Text className="text-xs font-bold text-appMuted dark:text-appDarkMuted mb-2">奖励名称</Text>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="例如：买一本书"
+            className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] px-4 py-4 text-[14px] font-semibold text-appText dark:text-appDarkText mb-4"
+            placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
+          />
+
+          <Text className="text-xs font-bold text-appMuted dark:text-appDarkMuted mb-2">所需行动值</Text>
+          <TextInput
+            value={cost}
+            onChangeText={setCost}
+            placeholder="例如：50"
+            keyboardType="numeric"
+            className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] px-4 py-4 text-[14px] font-semibold text-appText dark:text-appDarkText mb-4"
+            placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
+          />
+
+          <Text className="text-xs font-bold text-appMuted dark:text-appDarkMuted mb-2">选择图标</Text>
+          <View className="flex-row flex-wrap gap-2 mb-5">
+            {icons.map((icon) => (
+              <TouchableOpacity
+                key={icon}
+                onPress={() => setSelectedIcon(icon)}
+                activeOpacity={0.85}
+                className={`w-12 h-12 rounded-2xl items-center justify-center border ${
+                  selectedIcon === icon
+                    ? 'border-primary bg-primary/10 dark:bg-primary/15'
+                    : 'border-appBorder dark:border-appDarkBorder bg-appCard dark:bg-appDarkCard'
+                }`}
+              >
+                <Text className="text-2xl">{icon}</Text>
               </TouchableOpacity>
-            </View>
-
-            <Text className="text-xs font-medium text-stone-600 mb-2">奖励名称</Text>
-            <TextInput
-              value={name}
-              onChangeText={setName}
-              placeholder="例如：买一本书"
-              className="bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm mb-4"
-              placeholderTextColor="#d6d3d1"
-            />
-
-            <Text className="text-xs font-medium text-stone-600 mb-2">所需行动值</Text>
-            <TextInput
-              value={cost}
-              onChangeText={setCost}
-              placeholder="例如：50"
-              keyboardType="numeric"
-              className="bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm mb-4"
-              placeholderTextColor="#d6d3d1"
-            />
-
-            <Text className="text-xs font-medium text-stone-600 mb-2">选择图标</Text>
-            <View className="flex-row flex-wrap gap-2 mb-4">
-              {icons.map((icon) => (
-                <TouchableOpacity
-                  key={icon}
-                  onPress={() => setSelectedIcon(icon)}
-                  className={`w-12 h-12 rounded-xl items-center justify-center border ${
-                    selectedIcon === icon ? 'border-primary bg-primary-light' : 'border-stone-200 bg-stone-50'
-                  }`}
-                >
-                  <Text className="text-2xl">{icon}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              onPress={handleAddReward}
-              className="bg-primary py-4 rounded-xl items-center"
-            >
-              <Text className="text-white font-semibold">确认添加</Text>
-            </TouchableOpacity>
+            ))}
           </View>
+
+          <TouchableOpacity
+            onPress={handleAddReward}
+            activeOpacity={0.9}
+            className="bg-appText dark:bg-appDarkText py-4 rounded-[22px] items-center"
+          >
+            <Text className="text-white dark:text-appText font-extrabold">确认添加</Text>
+          </TouchableOpacity>
         </View>
-      </Modal>
+      </BottomSheet>
     </SafeAreaView>
   );
 }

@@ -32,7 +32,14 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "允许访问相册以选择头像",
+          "cameraPermission": "允许使用相机以拍摄头像"
+        }
+      ]
     ]
   }
 }

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,7 +6,16 @@ import { useUserStore } from '../../stores';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { isDarkMode, toggleDarkMode } = useUserStore();
+  const { isDarkMode, toggleDarkMode, totalPoints, isLoggedIn, user, logout } = useUserStore();
+
+  const todayLabel = new Date().toLocaleDateString('zh-CN', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+  });
+
+  const level = Math.max(1, Math.floor(totalPoints / 50) + 1);
+  const levelLabel = level <= 1 ? '新手' : level <= 3 ? '进阶' : level <= 6 ? '熟练' : '大师';
 
   const menuItems = [
     { icon: 'gift', label: '奖励中心', route: '/rewards' },
@@ -18,58 +27,155 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-800">
-      <View className="px-5 py-3">
-        <Text className="text-xl font-bold text-stone-700 dark:text-stone-100">我的</Text>
-      </View>
+    <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg">
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
+      >
+        <View className="pt-2 pb-4">
+          <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
+            {todayLabel}
+          </Text>
+          <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
+            我的
+          </Text>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* User Info */}
-        <View className="bg-primary mx-5 p-5 rounded-[20px] mb-6">
-          <View className="flex-row items-center gap-4">
-            <View className="w-16 h-16 rounded-full bg-white/20 items-center justify-center">
-              <Text className="text-3xl">👤</Text>
-            </View>
-            <View>
-              <Text className="text-xl font-bold text-white">用户</Text>
-              <Text className="text-sm text-white/80">Lv.1 新手</Text>
+          <View className="mt-4">
+            <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] p-5">
+              <View className="flex-row items-center justify-between">
+                <TouchableOpacity
+                  onPress={() => isLoggedIn && router.push('/profile/user-info')}
+                  activeOpacity={isLoggedIn ? 0.85 : 1}
+                  className="flex-row items-center gap-3"
+                >
+                  <View className="w-14 h-14 rounded-[18px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center overflow-hidden">
+                    {user?.avatarUri ? (
+                      <Image source={{ uri: user.avatarUri }} className="w-full h-full" resizeMode="cover" />
+                    ) : (
+                      <Text className="text-2xl">👤</Text>
+                    )}
+                  </View>
+                  <View>
+                    {isLoggedIn ? (
+                      <>
+                        <Text className="text-[18px] font-extrabold text-appText dark:text-appDarkText">
+                          {user?.displayName || '用户'}
+                        </Text>
+                        <View className="flex-row items-center gap-2 mt-1">
+                          <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
+                            <Text className="text-appText dark:text-appDarkText text-[11px] font-bold">
+                              Lv.{level}
+                            </Text>
+                          </View>
+                          <Text className="text-appMuted dark:text-appDarkMuted text-[12px] font-extrabold">
+                            {levelLabel}
+                          </Text>
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <Text className="text-[18px] font-extrabold text-appText dark:text-appDarkText">
+                          未登录
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => router.push('/auth/login')}
+                          activeOpacity={0.9}
+                          className="mt-2 px-3 py-1.5 rounded-full bg-appText dark:bg-appDarkText self-start"
+                        >
+                          <Text className="text-white dark:text-appText text-[12px] font-extrabold">
+                            点我登录
+                          </Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+                </TouchableOpacity>
+
+                {isLoggedIn && (
+                  <View className="items-end">
+                    <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
+                      行动值
+                    </Text>
+                    <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-1">
+                      {totalPoints}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
         </View>
 
-        {/* Menu */}
-        <View className="mx-5 bg-white dark:bg-stone-700 rounded-2xl border border-stone-200 dark:border-stone-600 overflow-hidden mb-6">
-          {menuItems.map((item, index) => (
+        <View className="bg-appCard dark:bg-appDarkCard rounded-[22px] border border-appBorder dark:border-appDarkBorder overflow-hidden">
+          {menuItems.map((item, index) => {
+            const enabled = Boolean(item.route);
+            return (
+              <TouchableOpacity
+                key={item.label}
+                onPress={() => enabled && router.push(item.route as any)}
+                activeOpacity={enabled ? 0.85 : 1}
+                className={`px-4 py-4 flex-row items-center justify-between ${
+                  index < menuItems.length - 1 ? 'border-b border-appBorder dark:border-appDarkBorder' : ''
+                }`}
+              >
+                <View className="flex-row items-center gap-3">
+                  <View className="w-10 h-10 rounded-2xl bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
+                    <Ionicons name={item.icon as any} size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+                  </View>
+                  <Text className={`text-[14px] font-extrabold ${
+                    enabled ? 'text-appText dark:text-appDarkText' : 'text-appMuted dark:text-appDarkMuted'
+                  }`}>
+                    {item.label}
+                  </Text>
+                </View>
+                <View className="flex-row items-center gap-2">
+                  {!enabled && (
+                    <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
+                      <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">即将上线</Text>
+                    </View>
+                  )}
+                  <Ionicons name="chevron-forward" size={16} color={isDarkMode ? '#44403c' : '#d6d3d1'} />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+
+          {isLoggedIn && (
             <TouchableOpacity
-              key={item.label}
-              onPress={() => item.route && router.push(item.route as any)}
-              className={`p-4 flex-row items-center justify-between ${
-                index < menuItems.length - 1 ? 'border-b border-stone-100 dark:border-stone-600' : ''
-              }`}
+              onPress={logout}
+              activeOpacity={0.85}
+              className="px-4 py-4 flex-row items-center justify-between border-t border-appBorder dark:border-appDarkBorder"
             >
               <View className="flex-row items-center gap-3">
-                <Ionicons name={item.icon as any} size={20} color="#a8a29e" />
-                <Text className="text-sm font-medium text-stone-700 dark:text-stone-200">{item.label}</Text>
+                <View className="w-10 h-10 rounded-2xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 items-center justify-center">
+                  <Ionicons name="log-out-outline" size={18} color="#ef4444" />
+                </View>
+                <Text className="text-[14px] font-extrabold text-red-500">退出登录</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color="#d6d3d1" />
+              <Ionicons name="chevron-forward" size={16} color={isDarkMode ? '#44403c' : '#d6d3d1'} />
             </TouchableOpacity>
-          ))}
+          )}
 
-          {/* Dark Mode Toggle */}
-          <View className="p-4 flex-row items-center justify-between">
+          <View className="px-4 py-4 flex-row items-center justify-between border-t border-appBorder dark:border-appDarkBorder">
             <View className="flex-row items-center gap-3">
-              <Ionicons name="moon" size={20} color="#a8a29e" />
-              <Text className="text-sm font-medium text-stone-700 dark:text-stone-200">深色模式</Text>
+              <View className="w-10 h-10 rounded-2xl bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
+                <Ionicons name="moon" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+              </View>
+              <View>
+                <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">深色模式</Text>
+              </View>
             </View>
             <Switch
               value={isDarkMode}
               onValueChange={toggleDarkMode}
               trackColor={{ false: '#e7e5e4', true: '#10B981' }}
+              thumbColor="white"
             />
           </View>
         </View>
 
-        <Text className="text-center text-[10px] text-stone-300 dark:text-stone-500 pb-8">
+        <Text className="text-center text-[10px] text-appMuted dark:text-appDarkMuted mt-8">
           Tiny Habits v1.0.0
         </Text>
       </ScrollView>

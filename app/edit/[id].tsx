@@ -3,12 +3,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { useHabitStore } from '../../stores';
+import { useHabitStore, useUserStore } from '../../stores';
 
 export default function EditScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { microBehaviors, updateMicroBehavior } = useHabitStore();
+  const isDarkMode = useUserStore((s) => s.isDarkMode);
 
   const behavior = microBehaviors.find((b) => b.id === id);
 
@@ -28,8 +29,8 @@ export default function EditScreen() {
 
   if (!behavior) {
     return (
-      <SafeAreaView className="flex-1 bg-stone-50 items-center justify-center">
-        <Text className="text-stone-400">习惯不存在</Text>
+      <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg items-center justify-center">
+        <Text className="text-appMuted dark:text-appDarkMuted">习惯不存在</Text>
       </SafeAreaView>
     );
   }
@@ -45,86 +46,85 @@ export default function EditScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50">
-      {/* Header */}
-      <View className="px-5 py-3 flex-row justify-between items-center">
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text className="text-stone-400 text-sm font-medium">取消</Text>
-        </TouchableOpacity>
-        <Text className="text-base font-bold text-stone-700">编辑配方</Text>
-        <TouchableOpacity onPress={handleSave}>
-          <Text className="text-sm font-semibold text-primary">保存</Text>
-        </TouchableOpacity>
+    <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg">
+      <View className="px-5 pt-2 pb-3">
+        <View className="flex-row items-center justify-between">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            activeOpacity={0.85}
+            className="px-3 py-2 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder"
+          >
+            <Text className="text-appMuted dark:text-appDarkMuted text-[12px] font-bold">取消</Text>
+          </TouchableOpacity>
+
+          <Text className="text-base font-extrabold text-appText dark:text-appDarkText">编辑配方</Text>
+
+          <TouchableOpacity
+            onPress={handleSave}
+            activeOpacity={0.85}
+            className="px-3 py-2 rounded-2xl bg-appText dark:bg-appDarkText"
+          >
+            <Text className="text-white dark:text-appText text-[12px] font-extrabold">保存</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <ScrollView className="flex-1 px-5 py-6" showsVerticalScrollIndicator={false}>
-        {/* Name */}
-        <View className="mb-6">
-          <Text className="text-base font-bold text-stone-700 mb-1">习惯名称</Text>
-          <Text className="text-xs text-stone-400 mb-3">给你的习惯起个名字</Text>
-          <View className="bg-white p-1 rounded-xl border border-stone-200 flex-row items-center">
-            <View className="w-10 h-10 items-center justify-center">
-              <Ionicons name="pencil" size={20} color="#a8a29e" />
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}>
+        <View className="gap-5">
+          <View>
+            <Text className="text-[13px] font-extrabold text-appText dark:text-appDarkText mb-2">习惯名称</Text>
+            <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] px-4 py-4 flex-row items-center">
+              <Ionicons name="pencil" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                placeholder="例如：喝一口水"
+                className="flex-1 ml-2 text-[14px] font-semibold text-appText dark:text-appDarkText"
+                placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
+              />
             </View>
-            <TextInput
-              value={name}
-              onChangeText={setName}
-              className="flex-1 h-10 text-[15px] font-semibold text-stone-700"
-            />
           </View>
-        </View>
 
-        <View className="border-t border-stone-100 mb-6" />
-
-        {/* Anchor */}
-        <View className="mb-6">
-          <Text className="text-base font-bold text-stone-700 mb-1">锚点</Text>
-          <Text className="text-xs text-stone-400 mb-3">当...之后</Text>
-          <View className="bg-white p-1 rounded-xl border border-stone-200 flex-row items-center">
-            <View className="w-10 h-10 items-center justify-center">
-              <Ionicons name="flag" size={20} color="#a8a29e" />
+          <View>
+            <Text className="text-[13px] font-extrabold text-appText dark:text-appDarkText mb-2">锚点</Text>
+            <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] px-4 py-4 flex-row items-center">
+              <Ionicons name="flag" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+              <TextInput
+                value={anchor}
+                onChangeText={setAnchor}
+                placeholder="例如：起床后"
+                className="flex-1 ml-2 text-[14px] font-semibold text-appText dark:text-appDarkText"
+                placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
+              />
             </View>
-            <TextInput
-              value={anchor}
-              onChangeText={setAnchor}
-              className="flex-1 h-10 text-[15px] font-semibold text-stone-700"
-            />
           </View>
-        </View>
 
-        <View className="border-t border-stone-100 mb-6" />
-
-        {/* Behavior */}
-        <View className="mb-6">
-          <Text className="text-base font-bold text-stone-700 mb-1">微行为</Text>
-          <Text className="text-xs text-stone-400 mb-3">我会...</Text>
-          <View className="bg-white p-1 rounded-xl border border-stone-200 flex-row items-center">
-            <View className="w-10 h-10 items-center justify-center">
-              <Ionicons name="flash" size={20} color="#a8a29e" />
+          <View>
+            <Text className="text-[13px] font-extrabold text-appText dark:text-appDarkText mb-2">微行为</Text>
+            <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] px-4 py-4 flex-row items-center">
+              <Ionicons name="flash" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+              <TextInput
+                value={behaviorText}
+                onChangeText={setBehaviorText}
+                placeholder="例如：喝一口水"
+                className="flex-1 ml-2 text-[14px] font-semibold text-appText dark:text-appDarkText"
+                placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
+              />
             </View>
-            <TextInput
-              value={behaviorText}
-              onChangeText={setBehaviorText}
-              className="flex-1 h-10 text-[15px] font-semibold text-stone-700"
-            />
           </View>
-        </View>
 
-        <View className="border-t border-stone-100 mb-6" />
-
-        {/* Celebration */}
-        <View className="mb-6">
-          <Text className="text-base font-bold text-stone-700 mb-1">庆祝方式</Text>
-          <Text className="text-xs text-stone-400 mb-3">然后...</Text>
-          <View className="bg-white p-1 rounded-xl border border-stone-200 flex-row items-center">
-            <View className="w-10 h-10 items-center justify-center">
-              <Ionicons name="sparkles" size={20} color="#a8a29e" />
+          <View>
+            <Text className="text-[13px] font-extrabold text-appText dark:text-appDarkText mb-2">庆祝方式</Text>
+            <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] px-4 py-4 flex-row items-center">
+              <Ionicons name="sparkles" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+              <TextInput
+                value={celebration}
+                onChangeText={setCelebration}
+                placeholder="例如：对自己微笑"
+                className="flex-1 ml-2 text-[14px] font-semibold text-appText dark:text-appDarkText"
+                placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
+              />
             </View>
-            <TextInput
-              value={celebration}
-              onChangeText={setCelebration}
-              className="flex-1 h-10 text-[15px] font-semibold text-stone-700"
-            />
           </View>
         </View>
       </ScrollView>

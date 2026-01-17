@@ -6,18 +6,18 @@ interface ButtonProps extends TouchableOpacityProps {
 }
 
 export function Button({ title, variant = 'primary', className, disabled, ...props }: ButtonProps) {
-  const baseStyle = 'py-4 rounded-xl items-center justify-center';
+  const baseStyle = 'py-4 rounded-[22px] items-center justify-center';
 
   const variantStyles = {
-    primary: disabled ? 'bg-stone-200' : 'bg-primary',
-    secondary: 'bg-stone-100',
-    outline: 'bg-transparent border border-stone-200',
+    primary: disabled ? 'bg-appBorder dark:bg-appDarkBorder' : 'bg-appText dark:bg-appDarkText',
+    secondary: 'bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder',
+    outline: 'bg-transparent border border-appBorder dark:border-appDarkBorder',
   };
 
   const textStyles = {
-    primary: disabled ? 'text-stone-400' : 'text-white',
-    secondary: 'text-stone-700',
-    outline: 'text-stone-700',
+    primary: disabled ? 'text-appMuted dark:text-appDarkMuted' : 'text-white dark:text-appText',
+    secondary: 'text-appText dark:text-appDarkText',
+    outline: 'text-appText dark:text-appDarkText',
   };
 
   return (
