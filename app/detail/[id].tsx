@@ -1,23 +1,100 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useHabitStore, useUserStore } from '../../stores';
+import { useHabitStore, useAuthStore } from '../../stores';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { apiClient } from '../../services/api/client';
+import { queryClient, queryKeys } from '../../services/api/queryClient';
+import * as Haptics from 'expo-haptics';
 
 export default function DetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { microBehaviors, checkIns, deleteMicroBehavior } = useHabitStore();
-  const isDarkMode = useUserStore((state) => state.isDarkMode);
+  const user = useAuthStore((s) => s.user);
+  const isDarkMode = useAuthStore((state) => state.isDarkMode);
 
-  const behavior = microBehaviors.find((b) => b.id === id);
+  // 已登录用户：从后端获取微行为详情
+  const { data: cloudBehavior, isLoading } = useQuery({
+    queryKey: ['microBehavior', id],
+    queryFn: async () => {
+      const response = await apiClient.get(`/api/micro-behavior/${id}`);
+      return response.data.data;
+    },
+    enabled: !!user?.id && !!id,
+  });
+
+  // 根据登录状态选择数据源
+  const behavior = user?.id ? cloudBehavior : microBehaviors.find((b) => b.id === id);
   const behaviorCheckIns = checkIns.filter((c) => c.microBehaviorId === id);
+
+  // 删除微行为的 mutation（已登录用户）
+  const deleteMutation = useMutation({
+    mutationFn: async (microBehaviorId: string) => {
+      const response = await apiClient.delete(`/api/micro-behavior/${microBehaviorId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      // 刷新微行为列表
+      if (user?.id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.userMicroBehaviors(user.id.toString()),
+        });
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+    },
+    onError: (error: any) => {
+      console.error('删除微行为失败:', error);
+      Alert.alert('删除失败', error.message || '请稍后重试');
+    },
+  });
+
+  const handleDelete = () => {
+    Alert.alert('删除配方', '确定删除这个习惯配方吗？', [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '删除',
+        style: 'destructive',
+        onPress: async () => {
+          if (user?.id) {
+            // 已登录：调用后端 API
+            deleteMutation.mutate(id);
+          } else {
+            // 未登录：删除本地数据
+            deleteMicroBehavior(id);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            router.back();
+          }
+        },
+      },
+    ]);
+  };
+
+  // 加载中状态
+  if (isLoading && user?.id) {
+    return (
+      <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg items-center justify-center">
+        <ActivityIndicator size="large" color="#10B981" />
+        <Text className="text-appMuted dark:text-appDarkMuted mt-3">加载中...</Text>
+      </SafeAreaView>
+    );
+  }
 
   if (!behavior) {
     return (
       <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg items-center justify-center">
-        <Text className="text-appMuted dark:text-appDarkMuted">习惯不存在</Text>
+        <Text className="text-4xl mb-3">🔍</Text>
+        <Text className="text-appMuted dark:text-appDarkMuted">微行为不存在</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          activeOpacity={0.85}
+          className="mt-5 bg-appText dark:bg-appDarkText px-4 py-3 rounded-2xl"
+        >
+          <Text className="text-white dark:text-appText font-bold">返回</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -27,20 +104,6 @@ export default function DetailScreen() {
     day: 'numeric',
     weekday: 'short',
   });
-
-  const handleDelete = () => {
-    Alert.alert('删除习惯', '确定删除这个习惯配方吗？', [
-      { text: '取消', style: 'cancel' },
-      {
-        text: '删除',
-        style: 'destructive',
-        onPress: () => {
-          deleteMicroBehavior(id);
-          router.back();
-        },
-      },
-    ]);
-  };
 
   return (
     <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg">

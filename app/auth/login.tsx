@@ -1,10 +1,11 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useUserStore } from '../../stores';
+import { useAuthStore } from '../../stores';
+import { useLogin } from '../../services/api';
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim().toLowerCase());
@@ -16,31 +17,40 @@ function isValidPhone(value: string) {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const isDarkMode = useUserStore((s) => s.isDarkMode);
-  const { loginWithPassword, loginWithQQ, loginWithApple, loginWithWeibo } = useUserStore();
+  const isDarkMode = useAuthStore((s) => s.isDarkMode);
+  
+  // 使用 React Query mutation
+  const loginMutation = useLogin();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
 
   const normalizedIdentifier = identifier.trim();
   const validIdentifier = isValidEmail(normalizedIdentifier) || isValidPhone(normalizedIdentifier);
-  const validPassword = password.trim().length >= 4;
+  const validPassword = password.trim().length >= 6; // 后端要求最少 6 位
 
-  const handleLogin = () => {
-    setError('');
+  const handleLogin = async () => {
     if (!validIdentifier || !validPassword) return;
 
-    const ok = loginWithPassword(normalizedIdentifier, password);
-    if (!ok) {
-      setError('账号或密码不正确');
+    try {
+      await loginMutation.mutateAsync({
+        account: normalizedIdentifier,
+        password: password.trim(),
+      });
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace('/(tabs)'); // 登录成功跳转到首页
+    } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
+      // 错误信息已经在 mutation 中处理
     }
-
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.back();
+  };
+  
+  // TODO: 第三方登录暂时保留原有逻辑，后续实现
+  const handleThirdPartyLogin = (provider: string) => {
+    console.log(`${provider} 登录功能待实现`);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
   };
 
   return (
@@ -105,9 +115,9 @@ export default function LoginScreen() {
 
               <View className="flex-row items-center justify-between">
                 <View className="flex-1">
-                  {error ? (
+                  {loginMutation.isError ? (
                     <Text className="text-[12px] font-semibold text-red-500">
-                      {error}
+                      {loginMutation.meta?.getErrorMessage?.(loginMutation.error) || '登录失败'}
                     </Text>
                   ) : null}
                 </View>
@@ -120,17 +130,23 @@ export default function LoginScreen() {
             <View className="mt-6">
               <TouchableOpacity
                 onPress={handleLogin}
-                disabled={!validIdentifier || !validPassword}
+                disabled={!validIdentifier || !validPassword || loginMutation.isPending}
                 activeOpacity={0.9}
-                className={`py-4 rounded-[22px] items-center ${
-                  validIdentifier && validPassword ? 'bg-appText dark:bg-appDarkText' : 'bg-appBorder dark:bg-appDarkBorder'
+                className={`py-4 rounded-[22px] items-center flex-row justify-center ${
+                  validIdentifier && validPassword && !loginMutation.isPending 
+                    ? 'bg-appText dark:bg-appDarkText' 
+                    : 'bg-appBorder dark:bg-appDarkBorder'
                 }`}
               >
-                <Text className={`text-[14px] font-extrabold ${
-                  validIdentifier && validPassword ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
-                }`}>
-                  登录
-                </Text>
+                {loginMutation.isPending ? (
+                  <ActivityIndicator size="small" color={isDarkMode ? '#0c0a09' : '#ffffff'} />
+                ) : (
+                  <Text className={`text-[14px] font-extrabold ${
+                    validIdentifier && validPassword ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
+                  }`}>
+                    登录
+                  </Text>
+                )}
               </TouchableOpacity>
 
               <View className="mt-4 flex-row items-center justify-center">
@@ -150,14 +166,14 @@ export default function LoginScreen() {
             </View>
             <View className="mt-4 flex-row items-center justify-center gap-4">
               <TouchableOpacity
-                onPress={() => { loginWithQQ(); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); router.back(); }}
+                onPress={() => handleThirdPartyLogin('QQ')}
                 activeOpacity={0.85}
                 className="w-14 h-14 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
               >
                 <FontAwesome name="qq" size={22} color={isDarkMode ? '#f5f5f4' : '#0c0a09'} />
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { loginWithWeibo(); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); router.back(); }}
+                onPress={() => handleThirdPartyLogin('微博')}
                 activeOpacity={0.85}
                 className="w-14 h-14 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
               >
@@ -165,7 +181,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
               {Platform.OS === 'ios' && (
                 <TouchableOpacity
-                  onPress={() => { loginWithApple(); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); router.back(); }}
+                  onPress={() => handleThirdPartyLogin('Apple')}
                   activeOpacity={0.85}
                   className="w-14 h-14 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
                 >

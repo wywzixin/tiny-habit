@@ -1,24 +1,42 @@
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useHabitStore, useUserStore } from '../../stores';
+import { useHabitStore, useAuthStore } from '../../stores';
 import { HabitCard, CelebrationModal } from '../../components/habit';
+import { getTodayBackendDay } from '../../utils/dateHelper';
+import { useUserMicroBehaviors, useCheckIn, useTodayCheckIns } from '../../services/api/hooks';
+import { Alert } from 'react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
   const [showCelebration, setShowCelebration] = useState(false);
   const [currentCelebration, setCurrentCelebration] = useState('');
 
-  const { microBehaviors, todayCheckIns, checkIn, uncheckIn } = useHabitStore();
-  const { totalPoints, addPoints } = useUserStore();
-  const isDarkMode = useUserStore((state) => state.isDarkMode);
+  const { todayCheckIns: localCheckIns, checkIn: localCheckIn, uncheckIn: localUncheckIn } = useHabitStore();
+  const user = useAuthStore((s) => s.user);
+  const isDarkMode = useAuthStore((state) => state.isDarkMode);
+  const totalPoints = user?.totalPoints || 0;
+  
+  // 已登录：从后端获取用户的微行为列表和今日打卡记录
+  const { data: cloudBehaviors = [], isLoading, error } = useUserMicroBehaviors(user?.id);
+  const { data: cloudCheckIns = [] } = useTodayCheckIns(user?.id);
+  const checkInMutation = useCheckIn();
+  
+  // 未登录：使用本地数据
+  const localBehaviors = useHabitStore((s) => s.microBehaviors);
+  
+  // 根据登录状态选择数据源
+  const microBehaviors = user?.id ? cloudBehaviors : localBehaviors;
+  const todayCheckIns = user?.id 
+    ? cloudCheckIns.map(c => c.microBehaviorId.toString()) 
+    : localCheckIns;
 
   const todayBehaviors = microBehaviors.filter((b) => {
-    const today = new Date().getDay();
+    const today = getTodayBackendDay(); // 使用工具函数获取后端格式的今天
     return b.isActive && b.frequency.includes(today);
   });
 
@@ -29,19 +47,48 @@ export default function HomeScreen() {
     weekday: 'short',
   });
 
-  const handleCheck = useCallback((behavior: typeof microBehaviors[0]) => {
+  const handleCheck = useCallback(async (behavior: typeof microBehaviors[0]) => {
     const isChecked = todayCheckIns.includes(behavior.id);
 
     if (!isChecked) {
-      checkIn(behavior.id, behavior.habitId);
-      addPoints(1);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setCurrentCelebration(behavior.celebration);
-      setShowCelebration(true);
+      // 已登录：调用后端 API
+      if (user?.id) {
+        try {
+          await checkInMutation.mutateAsync({
+            microBehaviorId: Number(behavior.id),
+            habitId: Number(behavior.habitId) || 0,
+          });
+          
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setCurrentCelebration(behavior.celebration);
+          setShowCelebration(true);
+        } catch (error: any) {
+          console.error('打卡失败:', error);
+          
+          // 友好的错误提示
+          if (error.message?.includes('已经打卡')) {
+            Alert.alert('提示', '今天已经打卡过了');
+          } else {
+            Alert.alert('打卡失败', error.message || '请稍后重试');
+          }
+        }
+      } 
+      // 未登录：使用本地存储
+      else {
+        localCheckIn(behavior.id, behavior.habitId);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setCurrentCelebration(behavior.celebration);
+        setShowCelebration(true);
+      }
     } else {
-      uncheckIn(behavior.id);
+      // 取消打卡（仅未登录用户支持）
+      if (!user?.id) {
+        localUncheckIn(behavior.id);
+      } else {
+        Alert.alert('提示', '已打卡的记录无法取消');
+      }
     }
-  }, [todayCheckIns, checkIn, uncheckIn, addPoints]);
+  }, [todayCheckIns, user?.id, checkInMutation, localCheckIn, localUncheckIn]);
 
   return (
     <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg">
@@ -131,7 +178,21 @@ export default function HomeScreen() {
         </View>
 
         <View className="gap-3">
-          {todayBehaviors.length === 0 ? (
+          {isLoading ? (
+            <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
+              <ActivityIndicator size="large" color="#10B981" />
+              <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed mt-3">
+                加载中...
+              </Text>
+            </View>
+          ) : error ? (
+            <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
+              <Text className="text-4xl mb-3">⚠️</Text>
+              <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed">
+                加载失败，请稍后重试
+              </Text>
+            </View>
+          ) : todayBehaviors.length === 0 ? (
             <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
               <Text className="text-4xl mb-3">🌱</Text>
               <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed">

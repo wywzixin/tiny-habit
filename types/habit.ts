@@ -8,7 +8,7 @@ export interface MicroBehavior {
   behavior: string;
   celebration: string;
   difficulty: 'easy' | 'medium' | 'hard';
-  frequency: number[]; // 0-6 代表周日到周六
+  frequency: number[]; // 1-7 代表周一到周日（与后端保持一致）
   reminderEnabled: boolean;
   reminderTime?: string;
   sortOrder: number;

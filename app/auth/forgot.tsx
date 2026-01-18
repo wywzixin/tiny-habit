@@ -4,7 +4,9 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useUserStore } from '../../stores';
+import { useAuthStore } from '../../stores';
+import { resetPassword as resetPasswordApi } from '../../services/api';
+import { useState as useReactState } from 'react';
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim().toLowerCase());
@@ -16,39 +18,56 @@ function isValidPhone(value: string) {
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const isDarkMode = useUserStore((s) => s.isDarkMode);
-  const { resetPassword } = useUserStore();
+  const isDarkMode = useAuthStore((s) => s.isDarkMode);
 
   const [identifier, setIdentifier] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const normalizedIdentifier = identifier.trim();
   const validIdentifier = isValidEmail(normalizedIdentifier) || isValidPhone(normalizedIdentifier);
-  const validPassword = newPassword.trim().length >= 4;
+  const validPassword = newPassword.trim().length >= 6; // 后端要求最少 6 位
   const matchPassword = newPassword === confirmPassword;
 
-  const canSubmit = validIdentifier && validPassword && matchPassword;
+  const canSubmit = validIdentifier && validPassword && matchPassword && !loading;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError('');
     if (!validIdentifier) {
       setError('请输入邮箱或手机号');
       return;
     }
     if (!validPassword) {
-      setError('密码至少 4 位');
+      setError('密码至少 6 位');
       return;
     }
     if (!matchPassword) {
       setError('两次密码不一致');
       return;
     }
-    resetPassword(normalizedIdentifier, newPassword);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.back();
+    
+    try {
+      setLoading(true);
+      
+      await resetPasswordApi({
+        account: normalizedIdentifier,
+        newPassword: newPassword.trim(),
+        confirmPassword: confirmPassword.trim(),
+      });
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+    } catch (error: any) {
+      console.error('重置密码失败 - 详细信息:', error);
+      const friendlyMessage = resetPasswordMutation.meta?.getErrorMessage?.(error) || '重置密码失败';
+      setError(friendlyMessage);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -137,7 +156,7 @@ export default function ForgotPasswordScreen() {
             className={`py-4 rounded-[22px] items-center ${canSubmit ? 'bg-appText dark:bg-appDarkText' : 'bg-appBorder dark:bg-appDarkBorder'}`}
           >
             <Text className={`text-[14px] font-extrabold ${canSubmit ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'}`}>
-              重置密码
+              {loading ? '重置中...' : '重置密码'}
             </Text>
           </TouchableOpacity>
         </View>

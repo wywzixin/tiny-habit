@@ -2,11 +2,11 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useUserStore } from '../../stores';
+import { useAuthStore } from '../../stores';
 
 export default function TabLayout() {
   const router = useRouter();
-  const isDarkMode = useUserStore((state) => state.isDarkMode);
+  const isDarkMode = useAuthStore((state) => state.isDarkMode);
 
   return (
     <Tabs

@@ -1,32 +1,28 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useUserStore } from '../../stores';
+import { useAuthStore } from '../../stores';
+import { useRecipeTemplates, useAddFromTemplate } from '../../services/api/hooks';
 
-const categories = ['全部', '健康', '生活', '心理', '效率'];
-
-const recipes = [
-  { id: '1', icon: '🛌', anchor: '双脚落地后', behavior: '说一句"今天很棒"', category: '心理' },
-  { id: '2', icon: '🪥', anchor: '刷完牙后', behavior: '用牙线清洁一颗牙', category: '健康' },
-  { id: '3', icon: '☕', anchor: '倒好咖啡后', behavior: '做两次深呼吸', category: '心理' },
-  { id: '4', icon: '🧼', anchor: '洗完手后', behavior: '涂一点护手霜', category: '健康' },
-  { id: '5', icon: '📱', anchor: '打开手机后', behavior: '先喝一口水', category: '健康' },
-  { id: '6', icon: '🚗', anchor: '坐进车里后', behavior: '系好安全带', category: '生活' },
-  { id: '7', icon: '💻', anchor: '打开电脑后', behavior: '整理桌面文件', category: '效率' },
-  { id: '8', icon: '🌙', anchor: '躺下睡觉前', behavior: '感恩三件事', category: '心理' },
-  { id: '9', icon: '🏃', anchor: '起床后', behavior: '做5个深蹲', category: '健康' },
-  { id: '10', icon: '📖', anchor: '睡前', behavior: '读一页书', category: '效率' },
-  { id: '11', icon: '🧘', anchor: '午休后', behavior: '冥想1分钟', category: '心理' },
-  { id: '12', icon: '🍎', anchor: '吃饭前', behavior: '先吃一口蔬菜', category: '健康' },
-];
+const categories = ['全部', '推荐', '健康', '学习', '心理', '运动'];
 
 export default function DiscoverScreen() {
-  const isDarkMode = useUserStore((state) => state.isDarkMode);
+  const isDarkMode = useAuthStore((state) => state.isDarkMode);
+  const user = useAuthStore((s) => s.user);
   const [search, setSearch] = useState('');
-  const [addedIds, setAddedIds] = useState<string[]>([]);
+  const [addedIds, setAddedIds] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('全部');
+
+  // 获取配方模板列表（已登录用户从后端获取，未登录用户不请求）
+  const { data: recipes = [], isLoading, error } = useRecipeTemplates(
+    selectedCategory === '全部' ? undefined : selectedCategory,
+    { enabled: !!user?.id } // 仅在已登录时调用
+  );
+  
+  // 从模板添加微行为
+  const addFromTemplateMutation = useAddFromTemplate();
 
   const todayLabel = new Date().toLocaleDateString('zh-CN', {
     month: 'long',
@@ -35,16 +31,37 @@ export default function DiscoverScreen() {
   });
 
   const filteredRecipes = recipes.filter((r) => {
-    const matchesSearch = r.anchor.includes(search) || r.behavior.includes(search);
-    const matchesCategory = selectedCategory === '全部' || r.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesSearch = r.anchor.includes(search) || r.behavior.includes(search) || r.name.includes(search);
+    return matchesSearch;
   });
 
-  const toggleAdd = (id: string) => {
+  const handleAdd = async (templateId: number) => {
+    // 未登录用户提示
+    if (!user?.id) {
+      Alert.alert('提示', '请先登录后再添加配方');
+      return;
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setAddedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+    
+    try {
+      await addFromTemplateMutation.mutateAsync({
+        templateId,
+        frequency: [1, 2, 3, 4, 5, 6, 7], // 默认每天
+        reminderEnabled: false,
+      });
+      
+      setAddedIds((prev) => [...prev, templateId]);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      // 3秒后移除已添加标记
+      setTimeout(() => {
+        setAddedIds((prev) => prev.filter((id) => id !== templateId));
+      }, 3000);
+    } catch (error: any) {
+      console.error('添加配方失败:', error);
+      Alert.alert('添加失败', error.message || '请稍后重试');
+    }
   };
 
   const handleCategoryChange = (category: string) => {
@@ -142,51 +159,91 @@ export default function DiscoverScreen() {
         </View>
 
         <View className="gap-3">
-          {filteredRecipes.map((recipe) => {
-            const added = addedIds.includes(recipe.id);
-            return (
-              <View
-                key={recipe.id}
-                className="bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder flex-row items-center"
-              >
-                <View className="w-12 h-12 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
-                  <Text className="text-[22px]">{recipe.icon}</Text>
-                </View>
-
-                <View className="flex-1">
-                  <View className="flex-row items-center gap-2">
-                    <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText" numberOfLines={1}>
-                      {recipe.anchor}
-                    </Text>
-                    <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
-                      <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
-                        {recipe.category}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-2" numberOfLines={2}>
-                    {recipe.behavior}
-                  </Text>
-                </View>
-
-                <TouchableOpacity
-                  onPress={() => toggleAdd(recipe.id)}
-                  activeOpacity={0.85}
-                  className={`w-10 h-10 rounded-full items-center justify-center border ${
-                    added
-                      ? 'bg-primary border-primary'
-                      : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
+          {isLoading ? (
+            <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
+              <ActivityIndicator size="large" color="#10B981" />
+              <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed mt-3">
+                加载中...
+              </Text>
+            </View>
+          ) : error ? (
+            <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
+              <Text className="text-4xl mb-3">⚠️</Text>
+              <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed">
+                加载失败，请稍后重试
+              </Text>
+            </View>
+          ) : filteredRecipes.length === 0 ? (
+            <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
+              <Text className="text-4xl mb-3">🔍</Text>
+              <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed">
+                没有找到相关配方
+              </Text>
+            </View>
+          ) : (
+            filteredRecipes.map((recipe) => {
+              const justAdded = addedIds.includes(recipe.id);
+              const alreadyAdded = recipe.isAdded; // 直接使用后端返回的字段
+              const isAdded = justAdded || alreadyAdded;
+              
+              return (
+                <View
+                  key={recipe.id}
+                  className={`bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder flex-row items-center ${
+                    alreadyAdded ? 'opacity-60' : ''
                   }`}
                 >
-                  <Ionicons
-                    name={added ? 'checkmark' : 'add'}
-                    size={20}
-                    color={added ? 'white' : (isDarkMode ? '#d6d3d1' : '#78716c')}
-                  />
-                </TouchableOpacity>
-              </View>
-            );
-          })}
+                  <View className="w-12 h-12 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
+                    <Text className="text-[22px]">{recipe.icon}</Text>
+                  </View>
+
+                  <View className="flex-1">
+                    <View className="flex-row items-center gap-2 flex-wrap">
+                      <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText" numberOfLines={1}>
+                        {recipe.name}
+                      </Text>
+                      <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
+                        <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
+                          {recipe.category}
+                        </Text>
+                      </View>
+                      {alreadyAdded && (
+                        <View className="px-2.5 py-1 rounded-full bg-primary/10 dark:bg-primary/15 border border-primary/25 dark:border-primary/30">
+                          <Text className="text-[11px] font-bold text-primary">
+                            已添加
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mt-1.5">
+                      {recipe.anchor} → {recipe.behavior}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => handleAdd(recipe.id)}
+                    activeOpacity={0.85}
+                    disabled={isAdded || addFromTemplateMutation.isPending}
+                    className={`w-10 h-10 rounded-full items-center justify-center border ${
+                      isAdded
+                        ? 'bg-primary border-primary'
+                        : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
+                    }`}
+                  >
+                    {addFromTemplateMutation.isPending ? (
+                      <ActivityIndicator size="small" color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+                    ) : (
+                      <Ionicons
+                        name={isAdded ? 'checkmark' : 'add'}
+                        size={20}
+                        color={isAdded ? 'white' : (isDarkMode ? '#d6d3d1' : '#78716c')}
+                      />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              );
+            })
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

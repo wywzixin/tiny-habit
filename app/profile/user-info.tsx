@@ -1,12 +1,14 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Alert, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import { useUserStore } from '../../stores';
+import { useAuthStore } from '../../stores';
 import { BottomSheet } from '../../components/ui/BottomSheet';
+import { uploadFile, updateProfile as updateProfileApi } from '../../services/api';
+import { useState as useReactState } from 'react';
 
 function genderLabel(g: 'male' | 'female' | 'unknown' | undefined) {
   if (g === 'male') return '男';
@@ -16,67 +18,145 @@ function genderLabel(g: 'male' | 'female' | 'unknown' | undefined) {
 
 export default function UserInfoScreen() {
   const router = useRouter();
-  const isDarkMode = useUserStore((s) => s.isDarkMode);
-  const { user, isLoggedIn, logout, updateProfile } = useUserStore();
+  const isDarkMode = useAuthStore((s) => s.isDarkMode);
+  const { user, isLoggedIn, updateUser, clearAuth } = useAuthStore();
+  
+  const logout = () => {
+    clearAuth();
+    router.replace('/auth/login');
+  };
+  
+  const updateProfile = (updates: Partial<typeof user>) => {
+    updateUser(updates);
+  };
 
   const [showAvatarSheet, setShowAvatarSheet] = useState(false);
-  const [showNameSheet, setShowNameSheet] = useState(false);
   const [showGenderSheet, setShowGenderSheet] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
-  const [draftName, setDraftName] = useState(user?.displayName || '');
+  const [draftName, setDraftName] = useState(user?.username || '');
+  const [draftGender, setDraftGender] = useState(user?.gender || 'unknown');
+  const [draftAvatarUrl, setDraftAvatarUrl] = useState(user?.avatarUrl || '');
 
   const identifierText = useMemo(() => {
     if (!user) return '';
-    return user.email || user.phone || user.identifier || '';
+    return user.email || user.phone || '';
   }, [user]);
 
   const pickFromLibrary = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('需要权限', '请允许访问相册以选择头像');
-      return;
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('相册权限:', perm);
+      
+      if (!perm.granted) {
+        Alert.alert('需要权限', '请允许访问相册以选择头像');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+      
+      console.log('选择结果:', result);
+
+      if (result.canceled) return;
+      const asset = result.assets?.[0];
+      if (!asset?.uri) return;
+      
+      await uploadAvatar(asset.uri);
+    } catch (error) {
+      console.error('选择相册失败:', error);
+      Alert.alert('错误', '选择相册失败');
     }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.85,
-    });
-
-    if (result.canceled) return;
-    const asset = result.assets?.[0];
-    if (!asset?.uri) return;
-    updateProfile({ avatarUri: asset.uri });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const pickFromCamera = async () => {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('需要权限', '请允许使用相机以拍摄头像');
-      return;
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      console.log('相机权限:', perm);
+      
+      if (!perm.granted) {
+        Alert.alert('需要权限', '请允许使用相机以拍摄头像');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+      
+      console.log('拍照结果:', result);
+
+      if (result.canceled) return;
+      const asset = result.assets?.[0];
+      if (!asset?.uri) return;
+      
+      await uploadAvatar(asset.uri);
+    } catch (error) {
+      console.error('拍照失败:', error);
+      Alert.alert('错误', '拍照失败');
     }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.85,
-    });
-
-    if (result.canceled) return;
-    const asset = result.assets?.[0];
-    if (!asset?.uri) return;
-    updateProfile({ avatarUri: asset.uri });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+  
+  const uploadAvatar = async (uri: string) => {
+    try {
+      setUploading(true);
+      
+      const file = {
+        uri,
+        type: 'image/jpeg',
+        name: 'avatar.jpg',
+      };
+      
+      const uploadResult = await uploadFile(file);
+      setDraftAvatarUrl(uploadResult.url);
+      setHasChanges(true);
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error: any) {
+      console.error('上传头像失败:', error);
+      Alert.alert('上传失败', '头像上传失败，请稍后重试');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const handleSaveName = () => {
-    const name = draftName.trim();
-    if (!name) return;
-    updateProfile({ displayName: name });
-    setShowNameSheet(false);
-    Haptics.selectionAsync();
+  const handleSave = async () => {
+    if (!hasChanges) return;
+    
+    try {
+      setSaving(true);
+      
+      const updates: any = {};
+      if (draftName !== user?.username) updates.username = draftName;
+      if (draftGender !== user?.gender) updates.gender = draftGender;
+      if (draftAvatarUrl !== user?.avatarUrl) updates.avatarUrl = draftAvatarUrl;
+      
+      if (Object.keys(updates).length === 0) {
+        setHasChanges(false);
+        return;
+      }
+      
+      await updateProfileApi(updates);
+      updateProfile(updates);
+      
+      setHasChanges(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('成功', '个人信息已更新');
+    } catch (error: any) {
+      console.error('更新失败:', error);
+      Alert.alert('保存失败', '个人信息保存失败，请稍后重试');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!isLoggedIn) {
@@ -110,7 +190,20 @@ export default function UserInfoScreen() {
           <Text className="text-base font-extrabold text-appText dark:text-appDarkText">
             用户信息
           </Text>
-          <View className="w-10 h-10" />
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={!hasChanges || saving}
+            activeOpacity={0.85}
+            className={`px-4 h-10 rounded-2xl items-center justify-center ${
+              hasChanges && !saving ? 'bg-appText dark:bg-appDarkText' : 'bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder'
+            }`}
+          >
+            <Text className={`text-sm font-extrabold ${
+              hasChanges && !saving ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
+            }`}>
+              {saving ? '保存中...' : '保存'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -120,12 +213,21 @@ export default function UserInfoScreen() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
       >
         <View className="items-center py-4">
-          <TouchableOpacity onPress={() => setShowAvatarSheet(true)} activeOpacity={0.85}>
+          <TouchableOpacity 
+            onPress={() => setShowAvatarSheet(true)} 
+            activeOpacity={0.85}
+            disabled={uploading}
+          >
             <View className="w-24 h-24 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center overflow-hidden">
-              {user?.avatarUri ? (
-                <Image source={{ uri: user.avatarUri }} className="w-full h-full" resizeMode="cover" />
+              {draftAvatarUrl ? (
+                <Image source={{ uri: draftAvatarUrl }} className="w-full h-full" resizeMode="cover" />
               ) : (
                 <Ionicons name="person" size={42} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+              )}
+              {uploading && (
+                <View className="absolute inset-0 bg-black/50 items-center justify-center">
+                  <Text className="text-white text-xs">上传中...</Text>
+                </View>
               )}
             </View>
             <View className="absolute -right-1 -bottom-1 w-8 h-8 rounded-full bg-appText dark:bg-appDarkText items-center justify-center border-4 border-appBg dark:border-appDarkBg">
@@ -135,19 +237,18 @@ export default function UserInfoScreen() {
         </View>
 
         <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] overflow-hidden">
-          <TouchableOpacity
-            onPress={() => { setDraftName(user?.displayName || ''); setShowNameSheet(true); }}
-            activeOpacity={0.85}
-            className="px-4 py-4 flex-row items-center justify-between border-b border-appBorder dark:border-appDarkBorder"
-          >
+          <View className="px-4 py-4 flex-row items-center justify-between border-b border-appBorder dark:border-appDarkBorder">
             <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">昵称</Text>
-            <View className="flex-row items-center gap-2">
-              <Text className="text-[14px] font-semibold text-appMuted dark:text-appDarkMuted">
-                {user?.displayName || ''}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={isDarkMode ? '#44403c' : '#d6d3d1'} />
+            <View className="flex-1 ml-4">
+              <TextInput
+                value={draftName}
+                onChangeText={(text) => { setDraftName(text); setHasChanges(true); }}
+                placeholder="输入昵称"
+                className="text-right text-[14px] font-semibold text-appText dark:text-appDarkText"
+                placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
+              />
             </View>
-          </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             onPress={() => setShowGenderSheet(true)}
@@ -157,7 +258,7 @@ export default function UserInfoScreen() {
             <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">性别</Text>
             <View className="flex-row items-center gap-2">
               <Text className="text-[14px] font-semibold text-appMuted dark:text-appDarkMuted">
-                {genderLabel(user?.gender)}
+                {genderLabel(draftGender)}
               </Text>
               <Ionicons name="chevron-forward" size={16} color={isDarkMode ? '#44403c' : '#d6d3d1'} />
             </View>
@@ -203,7 +304,11 @@ export default function UserInfoScreen() {
       >
         <View className="px-5 pb-8">
           <TouchableOpacity
-            onPress={async () => { setShowAvatarSheet(false); await pickFromCamera(); }}
+            onPress={() => { 
+              setShowAvatarSheet(false);
+              // iOS 需要更长的延迟确保 Modal 完全关闭
+              setTimeout(() => pickFromCamera(), 500);
+            }}
             activeOpacity={0.85}
             className="py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center"
           >
@@ -211,7 +316,11 @@ export default function UserInfoScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={async () => { setShowAvatarSheet(false); await pickFromLibrary(); }}
+            onPress={() => { 
+              setShowAvatarSheet(false);
+              // iOS 需要更长的延迟确保 Modal 完全关闭
+              setTimeout(() => pickFromLibrary(), 500);
+            }}
             activeOpacity={0.85}
             className="mt-3 py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center"
           >
@@ -229,29 +338,6 @@ export default function UserInfoScreen() {
       </BottomSheet>
 
       <BottomSheet
-        visible={showNameSheet}
-        title="修改昵称"
-        onClose={() => setShowNameSheet(false)}
-        rightLabel="保存"
-        onRightPress={handleSaveName}
-      >
-        <View className="px-5 pb-8">
-          <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] px-4 h-[56px] flex-row items-center">
-            <Ionicons name="text-outline" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
-            <TextInput
-              value={draftName}
-              onChangeText={setDraftName}
-              placeholder="输入昵称"
-              className="flex-1 ml-2 h-full text-[14px] font-semibold text-appText dark:text-appDarkText"
-              placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
-              returnKeyType="done"
-              onSubmitEditing={handleSaveName}
-            />
-          </View>
-        </View>
-      </BottomSheet>
-
-      <BottomSheet
         visible={showGenderSheet}
         title="选择性别"
         onClose={() => setShowGenderSheet(false)}
@@ -260,14 +346,14 @@ export default function UserInfoScreen() {
           {(['male', 'female', 'unknown'] as const).map((g) => (
             <TouchableOpacity
               key={g}
-              onPress={() => { updateProfile({ gender: g }); setShowGenderSheet(false); Haptics.selectionAsync(); }}
+              onPress={() => { setDraftGender(g); setHasChanges(true); setShowGenderSheet(false); Haptics.selectionAsync(); }}
               activeOpacity={0.85}
               className="py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder flex-row items-center justify-between px-4"
             >
               <Text className="text-appText dark:text-appDarkText font-extrabold">
                 {genderLabel(g)}
               </Text>
-              {user?.gender === g && (
+              {draftGender === g && (
                 <Ionicons name="checkmark" size={18} color="#10B981" />
               )}
             </TouchableOpacity>

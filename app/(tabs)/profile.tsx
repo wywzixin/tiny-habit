@@ -2,11 +2,50 @@ import { View, Text, ScrollView, TouchableOpacity, Switch, Image } from 'react-n
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useUserStore } from '../../stores';
+import { useAuthStore } from '../../stores';
+import { useUserStats } from '../../services/api/hooks/useStats';
+import { useEffect, useRef } from 'react';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { isDarkMode, toggleDarkMode, totalPoints, isLoggedIn, user, logout } = useUserStore();
+  const { isDarkMode, toggleDarkMode, isLoggedIn, user, updateUser } = useAuthStore();
+  
+  // 获取最新的统计数据
+  const { data: cloudStats } = useUserStats(user?.id);
+  
+  // 使用 ref 来避免无限循环
+  const hasUpdated = useRef(false);
+  
+  // 同步统计数据到 authStore（只在数据变化时更新一次）
+  useEffect(() => {
+    if (user && cloudStats && !hasUpdated.current) {
+      const needsUpdate = 
+        user.totalPoints !== cloudStats.totalPoints ||
+        user.availablePoints !== cloudStats.availablePoints ||
+        user.level !== cloudStats.level;
+      
+      if (needsUpdate) {
+        updateUser({
+          totalPoints: cloudStats.totalPoints,
+          availablePoints: cloudStats.availablePoints,
+          level: cloudStats.level,
+        });
+        hasUpdated.current = true;
+      }
+    }
+  }, [cloudStats]);
+  
+  // 重置标记（当用户或统计数据变化时）
+  useEffect(() => {
+    hasUpdated.current = false;
+  }, [user?.id, cloudStats?.totalPoints, cloudStats?.availablePoints]);
+  
+  const totalPoints = user?.totalPoints || 0;
+  
+  const logout = () => {
+    useAuthStore.getState().clearAuth();
+    router.replace('/auth/login');
+  };
 
   const todayLabel = new Date().toLocaleDateString('zh-CN', {
     month: 'long',
@@ -50,8 +89,8 @@ export default function ProfileScreen() {
                   className="flex-row items-center gap-3"
                 >
                   <View className="w-14 h-14 rounded-[18px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center overflow-hidden">
-                    {user?.avatarUri ? (
-                      <Image source={{ uri: user.avatarUri }} className="w-full h-full" resizeMode="cover" />
+                    {user?.avatarUrl ? (
+                      <Image source={{ uri: user.avatarUrl }} className="w-full h-full" resizeMode="cover" />
                     ) : (
                       <Text className="text-2xl">👤</Text>
                     )}
@@ -60,7 +99,7 @@ export default function ProfileScreen() {
                     {isLoggedIn ? (
                       <>
                         <Text className="text-[18px] font-extrabold text-appText dark:text-appDarkText">
-                          {user?.displayName || '用户'}
+                          {user?.username || '用户'}
                         </Text>
                         <View className="flex-row items-center gap-2 mt-1">
                           <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
@@ -91,17 +130,6 @@ export default function ProfileScreen() {
                     )}
                   </View>
                 </TouchableOpacity>
-
-                {isLoggedIn && (
-                  <View className="items-end">
-                    <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
-                      行动值
-                    </Text>
-                    <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-1">
-                      {totalPoints}
-                    </Text>
-                  </View>
-                )}
               </View>
             </View>
           </View>
@@ -140,22 +168,6 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             );
           })}
-
-          {isLoggedIn && (
-            <TouchableOpacity
-              onPress={logout}
-              activeOpacity={0.85}
-              className="px-4 py-4 flex-row items-center justify-between border-t border-appBorder dark:border-appDarkBorder"
-            >
-              <View className="flex-row items-center gap-3">
-                <View className="w-10 h-10 rounded-2xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 items-center justify-center">
-                  <Ionicons name="log-out-outline" size={18} color="#ef4444" />
-                </View>
-                <Text className="text-[14px] font-extrabold text-red-500">退出登录</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={isDarkMode ? '#44403c' : '#d6d3d1'} />
-            </TouchableOpacity>
-          )}
 
           <View className="px-4 py-4 flex-row items-center justify-between border-t border-appBorder dark:border-appDarkBorder">
             <View className="flex-row items-center gap-3">

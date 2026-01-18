@@ -6,29 +6,108 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useHabitStore, useUserStore } from '../stores';
+import { useHabitStore, useAuthStore } from '../stores';
 import { celebrations, weekDays } from '../constants';
 import { BottomSheet } from '../components/ui/BottomSheet';
+import { useCreateRecipe, useHabitLibrary, useDeleteHabit, useUpdateRecipe } from '../services/api/hooks';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../services/api/client';
 
 // 习惯库分类
 const habitCategories = ['全部', '新建', '推荐', '健康', '学习', '生活', '心理', '社交'];
 
-// 习惯库数据
-const habitLibrary = [
-  { name: '多喝水', desc: '每天8杯水，保持水分', icon: '💧', iconBg: '#CFFAFE', category: '健康' },
-  { name: '坚持运动', desc: '强身健体，活力满满', icon: '💪', iconBg: '#D1FAE5', category: '健康' },
-  { name: '早睡早起', desc: '规律作息，精神饱满', icon: '🌅', iconBg: '#FEF3C7', category: '健康' },
-  { name: '阅读', desc: '开卷有益，增长见识', icon: '📖', iconBg: '#FEF3C7', category: '学习' },
-  { name: '冥想', desc: '静心养神，提升专注', icon: '🧘', iconBg: '#FCE7F3', category: '心理' },
-  { name: '写日记', desc: '记录生活，整理思绪', icon: '📝', iconBg: '#DBEAFE', category: '心理' },
-  { name: '整理房间', desc: '整洁环境，清爽心情', icon: '🏠', iconBg: '#DBEAFE', category: '生活' },
-  { name: '记账', desc: '理财有道，心中有数', icon: '💰', iconBg: '#FEF3C7', category: '生活' },
-  { name: '学英语', desc: '每天进步一点点', icon: '🔤', iconBg: '#DBEAFE', category: '学习' },
-  { name: '健康饮食', desc: '均衡营养，身体棒棒', icon: '🥗', iconBg: '#D1FAE5', category: '健康' },
-  { name: '每天运动30分钟', desc: '增强体质，保持活力', icon: '🏃', iconBg: '#D1FAE5', category: '推荐' },
-  { name: '每周读完1本书', desc: '持续学习，拓展视野', icon: '📚', iconBg: '#FEF3C7', category: '推荐' },
-  { name: '每周约见朋友', desc: '维系友情，社交充电', icon: '👥', iconBg: '#DBEAFE', category: '社交' },
-  { name: '感恩日记', desc: '感恩生活，积极心态', icon: '🙏', iconBg: '#D1FAE5', category: '心理' },
+// 本地系统习惯库（未登录用户使用）
+const localSystemHabits = [
+  {
+    id: 'system-1',
+    name: '多喝水',
+    icon: '💧',
+    category: '推荐',
+    source: 'system' as const,
+    description: '每天8杯水，保持身体水分',
+    popularity: 100,
+  },
+  {
+    id: 'system-2',
+    name: '早起',
+    icon: '🌅',
+    category: '推荐',
+    source: 'system' as const,
+    description: '早睡早起身体好',
+    popularity: 95,
+  },
+  {
+    id: 'system-3',
+    name: '运动健身',
+    icon: '💪',
+    category: '健康',
+    source: 'system' as const,
+    description: '每天运动30分钟',
+    popularity: 90,
+  },
+  {
+    id: 'system-4',
+    name: '阅读',
+    icon: '📚',
+    category: '学习',
+    source: 'system' as const,
+    description: '每天阅读15分钟',
+    popularity: 85,
+  },
+  {
+    id: 'system-5',
+    name: '冥想',
+    icon: '🧘',
+    category: '心理',
+    source: 'system' as const,
+    description: '每天冥想10分钟',
+    popularity: 80,
+  },
+  {
+    id: 'system-6',
+    name: '整理房间',
+    icon: '🧹',
+    category: '生活',
+    source: 'system' as const,
+    description: '保持环境整洁',
+    popularity: 75,
+  },
+  {
+    id: 'system-7',
+    name: '联系朋友',
+    icon: '👋',
+    category: '社交',
+    source: 'system' as const,
+    description: '保持社交联系',
+    popularity: 70,
+  },
+  {
+    id: 'system-8',
+    name: '健康饮食',
+    icon: '🥗',
+    category: '健康',
+    source: 'system' as const,
+    description: '多吃蔬菜水果',
+    popularity: 88,
+  },
+  {
+    id: 'system-9',
+    name: '学习新技能',
+    icon: '🎯',
+    category: '学习',
+    source: 'system' as const,
+    description: '每天学习一点新知识',
+    popularity: 82,
+  },
+  {
+    id: 'system-10',
+    name: '感恩日记',
+    icon: '📝',
+    category: '心理',
+    source: 'system' as const,
+    description: '记录每天的感恩事项',
+    popularity: 78,
+  },
 ];
 
 const aiRecommendations = {
@@ -57,18 +136,76 @@ export default function CreateScreen() {
     addUserHabitTemplate,
     deleteUserHabitTemplate,
   } = useHabitStore();
-  const isDarkMode = useUserStore((state) => state.isDarkMode);
+  const user = useAuthStore((s) => s.user);
+  const isDarkMode = useAuthStore((state) => state.isDarkMode);
+  
+  // 创建配方的 mutation
+  const createRecipeMutation = useCreateRecipe();
+  
+  // 更新配方的 mutation
+  const updateRecipeMutation = useUpdateRecipe();
+  
+  // 获取云端习惯库数据（仅已登录用户）
+  const { data: cloudHabits = [], isLoading: isLoadingLibrary, error: libraryError } = useHabitLibrary(
+    undefined,
+    { enabled: !!user?.id } // 仅在已登录时调用
+  );
+  
+  // 编辑模式：获取云端微行为详情（仅已登录用户）
+  const { data: cloudBehavior, isLoading: isLoadingBehavior } = useQuery({
+    queryKey: ['microBehavior', editingId],
+    queryFn: async () => {
+      const response = await apiClient.get(`/api/micro-behavior/${editingId}`);
+      return response.data.data;
+    },
+    enabled: !!user?.id && !!editingId,
+  });
+  
+  // 调试：打印错误信息
+  useEffect(() => {
+    if (libraryError) {
+      console.error('习惯库加载失败:', libraryError);
+    }
+  }, [libraryError]);
+  
+  // 删除习惯的 mutation
+  const deleteHabitMutation = useDeleteHabit();
+
+  // 根据登录状态选择数据源
+  const habitLibraryData = useMemo(() => {
+    // 已登录：仅使用云端数据
+    if (user?.id) {
+      console.log('已登录用户，云端习惯数据:', cloudHabits);
+      console.log('isLoadingLibrary:', isLoadingLibrary);
+      return cloudHabits;
+    }
+
+    // 未登录：使用本地数据（用户习惯 + 系统习惯）
+    const localHabitsFormatted = userHabitTemplates.map(h => ({
+      id: h.id,
+      name: h.name,
+      icon: h.icon,
+      category: '新建',
+      source: 'user' as const,
+      microBehaviorCount: 0,
+      description: h.desc,
+    }));
+
+    console.log('未登录用户，本地习惯数据:', [...localHabitsFormatted, ...localSystemHabits]);
+    return [...localHabitsFormatted, ...localSystemHabits];
+  }, [user?.id, userHabitTemplates, cloudHabits, isLoadingLibrary]);
 
   const [goal, setGoal] = useState('');
   const [behavior, setBehavior] = useState('');
   const [anchor, setAnchor] = useState('');
   const [celebration, setCelebration] = useState('');
-  const [frequency, setFrequency] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
+  const [frequency, setFrequency] = useState<number[]>([1, 2, 3, 4, 5, 6, 7]); // 1-7 代表周一到周日
 
   // 习惯库弹窗状态
   const [showLibrary, setShowLibrary] = useState(false);
   const [libraryCategory, setLibraryCategory] = useState('全部');
   const [librarySearch, setLibrarySearch] = useState('');
+  const [isEditMode, setIsEditMode] = useState(false); // 编辑模式状态
 
   // 提醒功能状态
   const [reminderEnabled, setReminderEnabled] = useState(false);
@@ -82,13 +219,35 @@ export default function CreateScreen() {
   });
 
   const formatTime = (date: Date) => {
-    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:00`;
   };
 
+  // 根据登录状态选择编辑数据源
   const editingBehavior = useMemo(() => {
     if (!editingId) return undefined;
+    
+    // 已登录：使用云端数据
+    if (user?.id && cloudBehavior) {
+      return {
+        id: cloudBehavior.id.toString(),
+        habitId: cloudBehavior.habitId?.toString() || '',
+        name: cloudBehavior.name,
+        icon: cloudBehavior.icon,
+        anchor: cloudBehavior.anchor,
+        behavior: cloudBehavior.behavior,
+        celebration: cloudBehavior.celebration,
+        difficulty: cloudBehavior.difficulty,
+        frequency: JSON.parse(cloudBehavior.frequency || '[1,2,3,4,5,6,7]'),
+        reminderEnabled: cloudBehavior.reminderEnabled,
+        reminderTime: cloudBehavior.reminderTime,
+        sortOrder: cloudBehavior.sortOrder || 0,
+        isActive: cloudBehavior.isActive,
+      };
+    }
+    
+    // 未登录：使用本地数据
     return microBehaviors.find((b) => b.id === editingId);
-  }, [editingId, microBehaviors]);
+  }, [editingId, user?.id, cloudBehavior, microBehaviors]);
 
   useEffect(() => {
     if (!editingId) return;
@@ -98,10 +257,10 @@ export default function CreateScreen() {
     setBehavior(editingBehavior.behavior || '');
     setAnchor(editingBehavior.anchor || '');
     setCelebration(editingBehavior.celebration || '');
-    setFrequency(editingBehavior.frequency?.length ? editingBehavior.frequency : [0, 1, 2, 3, 4, 5, 6]);
+    setFrequency(editingBehavior.frequency?.length ? editingBehavior.frequency : [1, 2, 3, 4, 5, 6, 7]);
 
     const t = editingBehavior.reminderTime;
-    if (t && /^\d{2}:\d{2}$/.test(t)) {
+    if (t && /^\d{2}:\d{2}/.test(t)) {
       const [hh, mm] = t.split(':').map((x) => Number(x));
       const d = new Date();
       d.setHours(hh);
@@ -126,33 +285,46 @@ export default function CreateScreen() {
 
   const canCreate = behavior && anchor && celebration && frequency.length > 0;
 
-  const systemHabits = habitLibrary.map((h, idx) => ({
-    id: `sys-${idx}`,
-    ...h,
-    source: 'system' as const,
-  }));
-  const myHabits = userHabitTemplates.map((h) => ({
-    id: h.id,
-    name: h.name,
-    desc: h.desc,
-    icon: h.icon,
-    iconBg: h.iconBg,
-    category: '新建',
-    source: 'user' as const,
-  }));
+  // 处理习惯库数据
+  const processedHabits = useMemo(() => {
+    console.log('=== 习惯库数据处理 ===');
+    console.log('habitLibraryData 原始数据:', habitLibraryData);
+    console.log('当前分类:', libraryCategory);
+    console.log('搜索关键词:', librarySearch);
+    
+    // 根据分类筛选
+    let filtered = habitLibraryData;
+    if (libraryCategory !== '全部') {
+      filtered = habitLibraryData.filter((h) => h.category === libraryCategory);
+      console.log('分类筛选后:', filtered);
+    }
 
-  const baseHabits =
-    libraryCategory === '新建'
-      ? myHabits
-      : libraryCategory === '全部'
-        ? [...myHabits, ...systemHabits]
-        : systemHabits.filter((h) => h.category === libraryCategory);
-
-  const displayedHabits = baseHabits.filter((h) => {
+    // 根据搜索关键词筛选
     const q = librarySearch.trim();
-    if (!q) return true;
-    return h.name.includes(q) || h.desc.includes(q);
-  });
+    if (q) {
+      filtered = filtered.filter((h) => 
+        h.name.includes(q) || h.description?.includes(q)
+      );
+      console.log('搜索筛选后:', filtered);
+    }
+
+    console.log('最终结果:', filtered);
+    return filtered;
+  }, [habitLibraryData, libraryCategory, librarySearch]);
+
+  // 获取图标背景色（根据分类）
+  const getIconBg = (category: string) => {
+    const colorMap: Record<string, string> = {
+      '推荐': '#D1FAE5',
+      '健康': '#CFFAFE',
+      '学习': '#FEF3C7',
+      '生活': '#DBEAFE',
+      '心理': '#FCE7F3',
+      '社交': '#DBEAFE',
+      '新建': '#E7E5E4',
+    };
+    return colorMap[category] || '#E7E5E4';
+  };
 
   const selectHabitFromLibrary = (name: string) => {
     setGoal(name);
@@ -163,70 +335,165 @@ export default function CreateScreen() {
 
   const toggleDay = (day: number) => {
     Haptics.selectionAsync();
+    // day 是 UI 索引 0-6，对应后端 1-7（周一到周日）
+    const backendDay = day + 1;
     setFrequency((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
+      prev.includes(backendDay) ? prev.filter((d) => d !== backendDay) : [...prev, backendDay].sort()
     );
   };
 
-  const handleDeleteUserHabit = (id: string, name: string) => {
-    Alert.alert('删除习惯', `确定删除“${name}”吗？`, [
-      { text: '取消', style: 'cancel' },
-      {
-        text: '删除',
-        style: 'destructive',
-        onPress: () => {
-          deleteUserHabitTemplate(id);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        },
+const handleDeleteUserHabit = async (id: number | string, name: string) => {
+  Alert.alert('删除习惯', `确定删除"${name}"吗？\n\n删除后该习惯下的所有微行为也会被删除。`, [
+    { text: '取消', style: 'cancel' },
+    {
+      text: '删除',
+      style: 'destructive',
+      onPress: async () => {
+        try {
+          // 已登录用户：调用后端 API
+          if (user?.id && typeof id === 'number') {
+            await deleteHabitMutation.mutateAsync(id);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          } 
+          // 未登录用户：删除本地习惯
+          else if (typeof id === 'string') {
+            deleteUserHabitTemplate(id);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+        } catch (error: any) {
+          console.error('删除习惯失败:', error);
+          
+          let errorMessage = '删除失败，请稍后重试';
+          if (error.code === 403) {
+            errorMessage = '系统推荐的习惯不能删除';
+          } else if (error.code === 404) {
+            errorMessage = '习惯不存在或无权操作';
+          }
+          
+          Alert.alert('删除失败', errorMessage);
+        }
       },
-    ]);
-  };
+    },
+  ]);
+};
 
-  const handleCreate = () => {
+
+  const handleCreate = async () => {
     if (!canCreate) return;
 
-    addMicroBehavior({
-      habitId: Date.now().toString(),
-      name: behavior,
-      icon: '✨',
-      anchor,
-      behavior,
-      celebration,
-      difficulty: 'easy',
-      frequency,
-      reminderEnabled,
-      reminderTime: reminderEnabled ? formatTime(reminderTime) : undefined,
-      sortOrder: 0,
-      isActive: true,
-    });
+    // 未登录用户：使用本地存储
+    if (!user?.id) {
+      // 保存习惯到本地（如果是新习惯）
+      const goalName = goal.trim();
+      if (goalName && !userHabitTemplates.some(h => h.name === goalName)) {
+        addUserHabitTemplate(goalName);
+      }
 
-    const goalName = goal.trim();
-    if (goalName) {
-      const isSystem = systemHabits.some((h) => h.name.trim() === goalName);
-      if (!isSystem) addUserHabitTemplate(goalName);
+      // 保存微行为到本地
+      addMicroBehavior({
+        habitId: 'local-habit-1',
+        name: behavior,
+        icon: '✨',
+        anchor,
+        behavior,
+        celebration,
+        difficulty: 'easy',
+        frequency,
+        reminderEnabled,
+        reminderTime: reminderEnabled ? formatTime(reminderTime) : undefined,
+        sortOrder: 0,
+        isActive: true,
+      });
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+      return;
     }
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.back();
+    // 已登录用户：调用后端 API
+    try {
+      await createRecipeMutation.mutateAsync({
+        habitName: goal.trim() || behavior.trim(),
+        habitIcon: '✨',
+        habitCategory: '自定义',
+        microBehavior: {
+          name: behavior,
+          icon: '✨',
+          anchor,
+          behavior,
+          celebration,
+          difficulty: 'easy',
+          frequency,
+          reminderEnabled,
+          reminderTime: reminderEnabled ? formatTime(reminderTime) : undefined,
+        },
+      });
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+    } catch (error: any) {
+      console.error('创建配方失败 - 详细信息:', error);
+      
+      // 转换为用户友好的错误信息
+      let friendlyMessage = '创建失败，请稍后重试';
+      if (error.code === 0) {
+        friendlyMessage = '网络连接失败，请检查网络';
+      } else if (error.message?.includes('数据库') || error.message?.includes('SQL')) {
+        friendlyMessage = '服务器错误，请稍后重试';
+      }
+      
+      Alert.alert('创建失败', friendlyMessage);
+    }
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editingId) return;
     if (!editingBehavior) return;
     if (!canCreate) return;
 
-    updateMicroBehavior(editingId, {
-      name: goal.trim() || behavior.trim(),
-      anchor,
-      behavior,
-      celebration,
-      frequency,
-      reminderEnabled,
-      reminderTime: reminderEnabled ? formatTime(reminderTime) : undefined,
-    });
+    // 未登录用户：使用本地存储
+    if (!user?.id) {
+      updateMicroBehavior(editingId, {
+        name: goal.trim() || behavior.trim(),
+        anchor,
+        behavior,
+        celebration,
+        frequency,
+        reminderEnabled,
+        reminderTime: reminderEnabled ? formatTime(reminderTime) : undefined,
+      });
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.back();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+      return;
+    }
+
+    // 已登录用户：调用后端 API
+    try {
+      await updateRecipeMutation.mutateAsync({
+        microBehaviorId: Number(editingId),
+        habitName: goal.trim() || behavior.trim(),
+        habitIcon: '✨',
+        habitCategory: '自定义',
+        microBehavior: {
+          name: behavior,
+          icon: '✨',
+          anchor,
+          behavior,
+          celebration,
+          difficulty: 'easy',
+          frequency,
+          reminderEnabled,
+          reminderTime: reminderEnabled ? formatTime(reminderTime) : undefined,
+        },
+      });
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+    } catch (error: any) {
+      console.error('更新配方失败:', error);
+      Alert.alert('更新失败', error.message || '请稍后重试');
+    }
   };
 
   const handleSubmit = editingId ? handleUpdate : handleCreate;
@@ -437,24 +704,27 @@ export default function CreateScreen() {
           <Text className="text-lg font-extrabold text-appText dark:text-appDarkText mb-1">📅 打卡频率</Text>
           <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">选择每周需要打卡的日子</Text>
           <View className="flex-row justify-between mb-1">
-            {weekDays.map((day, index) => (
-              <TouchableOpacity
-                key={index}
-                onPress={() => toggleDay(index)}
-                activeOpacity={0.85}
-                className={`w-10 h-10 rounded-full items-center justify-center border ${
-                  frequency.includes(index)
-                    ? 'bg-appText dark:bg-appDarkText border-appText dark:border-appDarkText'
-                    : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
-                }`}
-              >
-                <Text className={`text-sm font-extrabold ${
-                  frequency.includes(index) ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
-                }`}>
-                  {day}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {weekDays.map((day, index) => {
+              const backendDay = index + 1; // UI 索引 0-6 对应后端 1-7
+              return (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => toggleDay(index)}
+                  activeOpacity={0.85}
+                  className={`w-10 h-10 rounded-full items-center justify-center border ${
+                    frequency.includes(backendDay)
+                      ? 'bg-appText dark:bg-appDarkText border-appText dark:border-appDarkText'
+                      : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
+                  }`}
+                >
+                  <Text className={`text-sm font-extrabold ${
+                    frequency.includes(backendDay) ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
+                  }`}>
+                    {day}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
@@ -532,27 +802,62 @@ export default function CreateScreen() {
       <BottomSheet
         visible={showLibrary}
         title="选择一个习惯目标"
-        onClose={() => { setShowLibrary(false); setLibrarySearch(''); }}
+        onClose={() => { 
+          setShowLibrary(false); 
+          setLibrarySearch(''); 
+          setIsEditMode(false); // 关闭时退出编辑模式
+        }}
         height="85%"
       >
+        {isLoadingLibrary && user?.id ? (
+          <View className="flex-1 items-center justify-center">
+            <Text className="text-appMuted dark:text-appDarkMuted">加载中...</Text>
+          </View>
+        ) : (
+        <>
         <View className="px-4 pb-4">
-          <View className="mt-2 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder px-4 py-3 flex-row items-center">
-            <Ionicons name="search" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
-            <TextInput
-              value={librarySearch}
-              onChangeText={setLibrarySearch}
-              placeholder="搜索习惯名称或描述..."
-              className="flex-1 ml-2 text-[14px] font-semibold text-appText dark:text-appDarkText"
-              placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
-              returnKeyType="search"
-            />
-            {librarySearch.trim().length > 0 && (
+          {/* 顶部搜索栏和编辑按钮 */}
+          <View className="flex-row items-center gap-2 mt-2">
+            <View className="flex-1 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder px-4 py-3 flex-row items-center">
+              <Ionicons name="search" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+              <TextInput
+                value={librarySearch}
+                onChangeText={setLibrarySearch}
+                placeholder="搜索习惯名称或描述..."
+                className="flex-1 ml-2 text-[14px] font-semibold text-appText dark:text-appDarkText"
+                placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
+                returnKeyType="search"
+              />
+              {librarySearch.trim().length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setLibrarySearch('')}
+                  activeOpacity={0.85}
+                  className="w-8 h-8 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center"
+                >
+                  <Ionicons name="close" size={16} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            {/* 编辑按钮 - 仅当有用户创建的习惯时显示 */}
+            {processedHabits.some(h => h.source === 'user') && (
               <TouchableOpacity
-                onPress={() => setLibrarySearch('')}
+                onPress={() => {
+                  setIsEditMode(!isEditMode);
+                  Haptics.selectionAsync();
+                }}
                 activeOpacity={0.85}
-                className="w-8 h-8 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center"
+                className={`px-4 py-3 rounded-[22px] border ${
+                  isEditMode
+                    ? 'bg-primary border-primary'
+                    : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
+                }`}
               >
-                <Ionicons name="close" size={16} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+                <Text className={`text-[14px] font-bold ${
+                  isEditMode ? 'text-white' : 'text-appText dark:text-appDarkText'
+                }`}>
+                  {isEditMode ? '完成' : '编辑'}
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -591,7 +896,7 @@ export default function CreateScreen() {
             </Text>
             <View className="px-3 py-1.5 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder">
               <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
-                {displayedHabits.length} 条
+                {processedHabits.length} 条
               </Text>
             </View>
           </View>
@@ -604,7 +909,7 @@ export default function CreateScreen() {
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
         >
           <View className="gap-3">
-            {displayedHabits.length === 0 ? (
+            {processedHabits.length === 0 ? (
               <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] p-8 items-center">
                 <Text className="text-4xl mb-3">🔎</Text>
                 <Text className="text-sm font-extrabold text-appText dark:text-appDarkText">
@@ -624,22 +929,30 @@ export default function CreateScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              displayedHabits.map((habit) => {
+              processedHabits.map((habit) => {
                 const selected = goal === habit.name;
+                const isUserHabit = habit.source === 'user';
+                // 使用 source + id 作为唯一 key，避免本地和云端 ID 冲突
+                const uniqueKey = `${habit.source}-${habit.id}`;
                 return (
                   <TouchableOpacity
-                    key={habit.id}
-                    onPress={() => selectHabitFromLibrary(habit.name)}
-                    activeOpacity={0.92}
+                    key={uniqueKey}
+                    onPress={() => {
+                      // 编辑模式下不允许选择
+                      if (!isEditMode) {
+                        selectHabitFromLibrary(habit.name);
+                      }
+                    }}
+                    activeOpacity={isEditMode ? 1 : 0.92}
                     className={`p-4 rounded-[22px] border flex-row items-center ${
-                      selected
+                      selected && !isEditMode
                         ? 'bg-primary/10 dark:bg-primary/15 border-primary/25 dark:border-primary/30'
                         : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
-                    }`}
+                    } ${isEditMode && !isUserHabit ? 'opacity-50' : ''}`}
                   >
                     <View
                       className="w-12 h-12 rounded-[16px] items-center justify-center mr-3 border border-appBorder dark:border-appDarkBorder"
-                      style={{ backgroundColor: habit.iconBg }}
+                      style={{ backgroundColor: getIconBg(habit.category) }}
                     >
                       <Text className="text-[22px]">{habit.icon}</Text>
                     </View>
@@ -655,29 +968,39 @@ export default function CreateScreen() {
                         </View>
                       </View>
                       <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-2">
-                        {habit.desc}
+                        {habit.description || '暂无描述'}
                       </Text>
                     </View>
+                    
+                    {/* 右侧按钮区域 */}
                     <View className="flex-row items-center gap-2">
-                      <View className={`w-10 h-10 rounded-full items-center justify-center border ${
-                        selected
-                          ? 'bg-primary border-primary'
-                          : 'bg-appBg dark:bg-appDarkBg border-appBorder dark:border-appDarkBorder'
-                      }`}>
-                        <Ionicons
-                          name={selected ? 'checkmark' : 'add'}
-                          size={20}
-                          color={selected ? 'white' : (isDarkMode ? '#d6d3d1' : '#78716c')}
-                        />
-                      </View>
-                      {habit.source === 'user' && (
+                      {/* 编辑模式：显示删除按钮（仅用户习惯） */}
+                      {isEditMode && isUserHabit ? (
                         <TouchableOpacity
-                          onPress={() => handleDeleteUserHabit(habit.id, habit.name)}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleDeleteUserHabit(habit.id, habit.name);
+                          }}
                           activeOpacity={0.85}
                           className="w-10 h-10 rounded-full items-center justify-center border border-red-100 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10"
                         >
                           <Ionicons name="trash-outline" size={18} color="#ef4444" />
                         </TouchableOpacity>
+                      ) : (
+                        /* 正常模式：显示添加/选中按钮 */
+                        !isEditMode && (
+                          <View className={`w-10 h-10 rounded-full items-center justify-center border ${
+                            selected
+                              ? 'bg-primary border-primary'
+                              : 'bg-appBg dark:bg-appDarkBg border-appBorder dark:border-appDarkBorder'
+                          }`}>
+                            <Ionicons
+                              name={selected ? 'checkmark' : 'add'}
+                              size={20}
+                              color={selected ? 'white' : (isDarkMode ? '#d6d3d1' : '#78716c')}
+                            />
+                          </View>
+                        )
                       )}
                     </View>
                   </TouchableOpacity>
@@ -686,6 +1009,8 @@ export default function CreateScreen() {
             )}
           </View>
         </ScrollView>
+        </>
+        )}
       </BottomSheet>
 
       <BottomSheet

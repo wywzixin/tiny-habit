@@ -1,0 +1,21 @@
+{
+  "workspace": {
+    "id": "a3399a23-ee71-4013-8421-10cd5b876bff",
+    "name": "My Workspace"
+  },
+  "collection": {
+    "id": "903501f2-7fc1-4818-a7b9-c065a04a4088",
+    "name": "Tiny Habits API Tests",
+    "uid": "19826463-903501f2-7fc1-4818-a7b9-c065a04a4088"
+  },
+  "environments": {
+    "local": {
+      "id": "",
+      "name": "Local Development",
+      "values": {
+        "base_url": "http://192.168.10.64:8081",
+        "token": "eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiI5IiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiaWF0IjoxNzY4NzEzMzU0LCJleHAiOjE3NjkzMTgxNTR9.8qHwwp18X3BemdXwSyStBd9Bl-3BMTG6nGdJX8q0tCVE6OIGcQQW7aCfVM0it1kL"
+      }
+    }
+  }
+}

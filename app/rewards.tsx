@@ -1,19 +1,62 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useUserStore, useRewardStore } from '../stores';
+import { useAuthStore, useRewardStore } from '../stores';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BottomSheet } from '../components/ui/BottomSheet';
+import { useUserRewards, useCreateReward, useRedeemReward } from '../services/api/hooks';
+import { useUserStats } from '../services/api/hooks/useStats';
 
 const icons = ['📚', '🎬', '🎮', '☕', '🍰', '🎁', '✈️', '🎸', '👕', '💄', '🎨', '🏃'];
 
 export default function RewardsScreen() {
   const router = useRouter();
-  const { availablePoints, totalPoints, redeemedPoints, redeemPoints, isDarkMode } = useUserStore();
-  const { rewards, addReward, redeemReward } = useRewardStore();
+  const user = useAuthStore((s) => s.user);
+  const updateUser = useAuthStore((s) => s.updateUser);
+  const isDarkMode = useAuthStore((s) => s.isDarkMode);
+  
+  // 本地存储（未登录用户）
+  const { rewards: localRewards, addReward: addLocalReward, redeemReward: redeemLocalReward } = useRewardStore();
+  
+  // 云端数据（已登录用户）
+  const { data: cloudRewards, isLoading } = useUserRewards(user?.id);
+  const { data: cloudStats } = useUserStats(user?.id);
+  const createRewardMutation = useCreateReward();
+  const redeemRewardMutation = useRedeemReward();
+
+  // 使用 ref 来避免无限循环
+  const hasUpdated = useRef(false);
+
+  // 同步统计数据到 authStore（只在数据变化时更新一次）
+  useEffect(() => {
+    if (user && cloudStats && !hasUpdated.current) {
+      const needsUpdate = 
+        user.totalPoints !== cloudStats.totalPoints ||
+        user.availablePoints !== cloudStats.availablePoints ||
+        user.level !== cloudStats.level;
+      
+      if (needsUpdate) {
+        updateUser({
+          totalPoints: cloudStats.totalPoints,
+          availablePoints: cloudStats.availablePoints,
+          level: cloudStats.level,
+        });
+        hasUpdated.current = true;
+      }
+    }
+  }, [cloudStats]);
+  
+  // 重置标记（当用户或统计数据变化时）
+  useEffect(() => {
+    hasUpdated.current = false;
+  }, [user?.id, cloudStats?.totalPoints, cloudStats?.availablePoints]);
+
+  const availablePoints = user?.availablePoints || 0;
+  const totalPoints = user?.totalPoints || 0;
+  const redeemedPoints = (totalPoints - availablePoints) || 0;
 
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
@@ -26,19 +69,78 @@ export default function RewardsScreen() {
     weekday: 'short',
   });
 
-  const handleAddReward = () => {
+  // 奖励列表：已登录用户使用云端数据，未登录用户使用本地数据
+  const rewards = useMemo(() => {
+    if (user?.id && cloudRewards) {
+      // 已登录：使用云端数据，转换为统一格式
+      return cloudRewards.map(r => ({
+        id: r.id.toString(),
+        userId: r.userId.toString(),
+        name: r.name,
+        icon: r.icon,
+        cost: r.cost,
+        status: r.status,
+        redeemedAt: r.redeemedAt,
+        createdAt: r.createdAt,
+      }));
+    }
+    // 未登录：使用本地数据
+    return localRewards;
+  }, [user?.id, cloudRewards, localRewards]);
+
+  const handleAddReward = async () => {
     if (!name || !cost) return;
-    addReward({ userId: '1', name, icon: selectedIcon, cost: parseInt(cost) });
-    setShowModal(false);
-    setName('');
-    setCost('');
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    const costNum = parseInt(cost);
+    if (costNum < 10) {
+      Alert.alert('提示', '所需行动值最低为 10');
+      return;
+    }
+
+    try {
+      if (user?.id) {
+        // 已登录：调用后端 API
+        await createRewardMutation.mutateAsync({
+          userId: user.id,
+          name,
+          icon: selectedIcon,
+          cost: costNum,
+        });
+      } else {
+        // 未登录：保存到本地
+        addLocalReward({ userId: '1', name, icon: selectedIcon, cost: costNum });
+      }
+      
+      setShowModal(false);
+      setName('');
+      setCost('');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error: any) {
+      Alert.alert('创建失败', error.message || '请稍后重试');
+    }
   };
 
-  const handleRedeem = (id: string, cost: number) => {
-    if (redeemPoints(cost)) {
-      redeemReward(id);
+  const handleRedeem = async (id: string, cost: number) => {
+    if (availablePoints < cost) {
+      Alert.alert('行动值不足', `需要 ${cost} 行动值，当前可用 ${availablePoints}`);
+      return;
+    }
+
+    try {
+      if (user?.id) {
+        // 已登录：调用后端 API
+        await redeemRewardMutation.mutateAsync({
+          rewardId: parseInt(id),
+          cost,
+        });
+      } else {
+        // 未登录：更新本地数据
+        redeemLocalReward(id);
+      }
+      
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error: any) {
+      Alert.alert('兑换失败', error.message || '请稍后重试');
     }
   };
 

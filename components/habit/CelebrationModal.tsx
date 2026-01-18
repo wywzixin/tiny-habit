@@ -1,7 +1,7 @@
 import { View, Text, Modal, Animated } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useUserStore } from '../../stores';
+import { useAuthStore } from '../../stores';
 
 interface CelebrationModalProps {
   visible: boolean;
@@ -10,7 +10,7 @@ interface CelebrationModalProps {
 }
 
 export function CelebrationModal({ visible, celebration, onClose }: CelebrationModalProps) {
-  const isDarkMode = useUserStore((s) => s.isDarkMode);
+  const isDarkMode = useAuthStore((s) => s.isDarkMode);
   const cardScale = useRef(new Animated.Value(0.96)).current;
   const iconScale = useRef(new Animated.Value(0.92)).current;
   const iconRotate = useRef(new Animated.Value(0)).current;

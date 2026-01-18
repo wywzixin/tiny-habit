@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MicroBehavior, CheckIn } from '../types';
+import { getTodayBackendDay } from '../utils/dateHelper';
 
 type UserHabitTemplate = {
   id: string;
@@ -42,7 +43,7 @@ const sampleMicroBehaviors: MicroBehavior[] = [
     behavior: '喝一口水',
     celebration: '说"太棒了"',
     difficulty: 'easy',
-    frequency: [0, 1, 2, 3, 4, 5, 6], // 每天
+    frequency: [1, 2, 3, 4, 5, 6, 7], // 1-7 代表周一到周日
     reminderEnabled: false,
     sortOrder: 0,
     isActive: true,
@@ -92,7 +93,7 @@ export const useHabitStore = create<HabitState>()(
           habitId,
           userId: '1',
           checkedAt: new Date().toISOString(),
-          pointsEarned: 1,
+          pointsEarned: 10,
         };
         set((state) => ({
           checkIns: [...state.checkIns, checkIn],
@@ -111,7 +112,7 @@ export const useHabitStore = create<HabitState>()(
       },
 
       getTodayBehaviors: () => {
-        const today = new Date().getDay();
+        const today = getTodayBackendDay(); // 使用工具函数获取后端格式的今天
         return get().microBehaviors.filter(
           (b) => b.isActive && b.frequency.includes(today)
         );

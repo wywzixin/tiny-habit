@@ -607,19 +607,26 @@ Authorization: Bearer <token>
 `DELETE /api/habit/{id}`
 
 **功能说明：**
-- 删除用户的习惯
+- 删除用户自己创建的习惯
 - 会同时删除该习惯下的所有微行为
-- 适用于用户想要批量清理不需要的习惯
+- **系统推荐的习惯不能删除**
 
 **路径参数：**
 | 参数 | 类型 | 说明 |
 |-----|------|------|
 | id | Long | 习惯ID |
 
+**删除规则：**
+| 习惯类型 | 是否可删除 | 说明 |
+|---------|----------|------|
+| 用户创建的习惯 | ✅ 可以 | `isFromSystem: false` |
+| 系统推荐的习惯 | ❌ 不可以 | `isFromSystem: true` |
+
 **注意事项：**
 - ⚠️ 删除习惯会同时删除该习惯下的所有微行为
 - ⚠️ 删除操作为软删除，数据不会真正丢失
 - ⚠️ 只能删除自己的习惯
+- ⚠️ 系统推荐的习惯（从习惯库添加的）不能删除
 
 **成功响应：**
 ```json
@@ -631,12 +638,36 @@ Authorization: Bearer <token>
 ```
 
 **错误响应：**
+
+**习惯不存在或无权操作：**
 ```json
 {
   "code": 404,
   "message": "习惯不存在或无权操作",
   "data": null
 }
+```
+
+**尝试删除系统习惯：**
+```json
+{
+  "code": 403,
+  "message": "系统推荐的习惯不能删除",
+  "data": null
+}
+```
+
+**前端处理建议：**
+```javascript
+// 在习惯列表中，根据 isFromSystem 字段控制删除按钮显示
+habits.map(habit => (
+  <View>
+    <Text>{habit.name}</Text>
+    {!habit.isFromSystem && (
+      <Button onPress={() => deleteHabit(habit.id)}>删除</Button>
+    )}
+  </View>
+))
 ```
 
 ---
@@ -1109,6 +1140,23 @@ Authorization: Bearer <token>
 
 `GET /api/stats/user/{userId}`
 
+**说明：** 获取用户的统计数据
+
+**路径参数：**
+| 参数 | 类型 | 说明 |
+|-----|------|------|
+| userId | Long | 用户ID |
+
+**响应字段说明：**
+| 字段名 | 类型 | 说明 | 计算方式 |
+|-------|------|------|---------|
+| totalPoints | Integer | 累计积分 | 用户从注册以来获得的所有积分总和 |
+| availablePoints | Integer | 可用积分 | 当前可以用来兑换奖励的积分 |
+| level | Integer | 用户等级 | 当前等级，默认为 1 |
+| habitCount | Long | 习惯数量 | 用户当前活跃的习惯数量（is_active=1） |
+| microBehaviorCount | Long | 微行为数量 | 用户当前活跃的微行为数量（is_active=1） |
+| checkInCount | Long | 打卡次数 | 用户从注册以来的总打卡次数 |
+
 **响应示例：**
 ```json
 {
@@ -1117,15 +1165,91 @@ Authorization: Bearer <token>
   "data": {
     "totalPoints": 100,
     "availablePoints": 80,
+    "level": 1,
     "habitCount": 3,
     "microBehaviorCount": 8,
-    "totalCheckIns": 50,
-    "todayCheckIns": 3,
-    "currentStreak": 7,
-    "longestStreak": 15
+    "checkInCount": 50
   }
 }
 ```
+
+**字段详细说明：**
+
+1. **totalPoints（累计积分）**
+   - 用户从注册以来获得的所有积分总和
+   - 每次打卡时增加
+   - 用于显示用户的总成就
+
+2. **availablePoints（可用积分）**
+   - 用户当前可以用来兑换奖励的积分
+   - 计算公式：`availablePoints = totalPoints - 已兑换奖励消耗的积分`
+   - 打卡时增加，兑换奖励时减少
+
+3. **level（用户等级）**
+   - 用户当前的等级，默认为 1
+   - 可根据积分或其他规则升级
+
+4. **habitCount（习惯数量）**
+   - 统计用户当前活跃的习惯数量
+   - 只统计 `is_active = 1` 的习惯
+   - 包括自己创建的和从习惯库添加的习惯
+
+5. **microBehaviorCount（微行为数量）**
+   - 统计用户当前活跃的微行为数量
+   - 只统计 `is_active = 1` 的微行为
+
+6. **checkInCount（打卡次数）**
+   - 用户从注册以来的总打卡次数
+   - 统计所有打卡记录
+
+### 6.2 获取今日打卡数据（发光时刻）
+
+`GET /api/stats/today-checkins/{userId}`
+
+**说明：** 获取用户今天的所有打卡记录，用于展示"今日发光时刻"
+
+**路径参数：**
+| 参数 | 类型 | 说明 |
+|-----|------|------|
+| userId | Long | 用户ID |
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "icon": "💧",
+      "behavior": "喝一口水",
+      "celebration": "对自己微笑",
+      "checkedAt": "2026-01-18T08:30:00",
+      "pointsEarned": 1
+    },
+    {
+      "icon": "🛏️",
+      "behavior": "整理被褥",
+      "celebration": "心里说太棒了",
+      "checkedAt": "2026-01-18T07:15:00",
+      "pointsEarned": 1
+    }
+  ]
+}
+```
+
+**返回字段说明：**
+| 字段名 | 类型 | 说明 |
+|-------|------|------|
+| icon | String | 微行为图标 |
+| behavior | String | 行为描述 |
+| celebration | String | 庆祝方式 |
+| checkedAt | DateTime | 打卡时间（ISO8601 格式） |
+| pointsEarned | Integer | 本次打卡获得的积分 |
+
+**注意事项：**
+- 返回数据按打卡时间倒序排列（最新的在前）
+- 只返回今天（00:00:00 到 23:59:59）的打卡记录
+- 如果今天没有打卡，返回空数组
 
 ---
 
@@ -1165,7 +1289,17 @@ Authorization: Bearer <token>
 
 ### 7.2 获取配方模板列表
 
-`GET /api/library/recipes`
+`GET /api/library/recipes` （需要认证）
+
+**说明：** 
+- 仅供已登录用户使用
+- 返回配方列表，包含 `isAdded` 字段，标识用户是否已添加该配方
+- 未登录用户不调用此接口，使用本地 AsyncStorage 存储的数据
+
+**请求头：**
+```
+Authorization: Bearer <token>
+```
 
 **查询参数：**
 | 参数 | 类型 | 必填 | 说明 |
@@ -1188,9 +1322,320 @@ Authorization: Bearer <token>
       "celebration": "对自己微笑",
       "difficulty": "easy",
       "isSystem": true,
-      "popularity": 100
+      "popularity": 100,
+      "isAdded": true
+    },
+    {
+      "id": 2,
+      "category": "推荐",
+      "name": "整理被褥",
+      "icon": "🛏️",
+      "anchor": "双脚落地后",
+      "behavior": "整理被褥",
+      "celebration": "心里说太棒了",
+      "difficulty": "easy",
+      "isSystem": true,
+      "popularity": 95,
+      "isAdded": false
     }
   ]
+}
+```
+
+### 7.3 获取配方模板列表（已登录用户 - 旧接口，保留兼容）
+
+`GET /api/library/recipes/with-status` （需要认证）
+
+**说明：** 供已登录用户使用，包含 `isAdded` 字段，标识用户是否已添加该配方
+
+**请求头：**
+```
+Authorization: Bearer <token>
+```
+
+**查询参数：**
+| 参数 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| category | String | 否 | 分类筛选 |
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "category": "推荐",
+      "name": "晨起喝水",
+      "icon": "💧",
+      "anchor": "起床后",
+      "behavior": "喝一口水",
+      "celebration": "对自己微笑",
+      "difficulty": "easy",
+      "isSystem": true,
+      "popularity": 100,
+      "isAdded": true
+    },
+    {
+      "id": 2,
+      "category": "推荐",
+      "name": "整理被褥",
+      "icon": "🛏️",
+      "anchor": "双脚落地后",
+      "behavior": "整理被褥",
+      "celebration": "心里说太棒了",
+      "difficulty": "easy",
+      "isSystem": true,
+      "popularity": 95,
+      "isAdded": false
+    }
+  ]
+}
+```
+
+**字段说明：**
+| 字段 | 类型 | 说明 |
+|-----|------|------|
+| isAdded | Boolean | 当前用户是否已添加该配方到微行为列表 |
+
+**实现原理：**
+- 通过 `micro_behavior.source_template_id` 字段关联配方模板
+- 查询当前用户已添加的模板ID集合
+- 标记每个模板的 `isAdded` 状态
+
+---
+
+## 8. 微行为模块补充
+
+### 8.1 从模板添加微行为
+
+`POST /api/micro-behavior/add-from-template` （需要认证）
+
+**说明：** 从配方库添加微行为到用户列表，会记录 `source_template_id` 用于追溯来源
+
+**请求头：**
+```
+Authorization: Bearer <token>
+```
+
+**请求参数：**
+```json
+{
+  "templateId": 1,
+  "frequency": "[1,2,3,4,5,6,7]",
+  "reminderEnabled": false,
+  "reminderTime": null
+}
+```
+
+**字段说明：**
+| 字段 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| templateId | Long | 是 | 配方模板ID |
+| frequency | String | 否 | 频率设置（JSON数组字符串），默认每天 |
+| reminderEnabled | Boolean | 否 | 是否启用提醒，默认false |
+| reminderTime | String | 否 | 提醒时间（HH:mm:ss格式） |
+
+**成功响应：**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 123,
+    "userId": 1,
+    "habitId": null,
+    "sourceTemplateId": 1,
+    "name": "晨起喝水",
+    "icon": "💧",
+    "anchor": "起床后",
+    "behavior": "喝一口水",
+    "celebration": "对自己微笑",
+    "difficulty": "easy",
+    "frequency": "[1,2,3,4,5,6,7]",
+    "reminderEnabled": false,
+    "reminderTime": null,
+    "sortOrder": 0,
+    "isActive": true,
+    "createdAt": "2026-01-18T10:30:00"
+  }
+}
+```
+
+**错误响应：**
+```json
+{
+  "code": 404,
+  "message": "配方模板不存在",
+  "data": null
+}
+```
+
+---
+
+## 9. 文件上传模块 `/api/file`
+
+### 9.1 上传文件
+
+`POST /api/file/upload` （无需认证）
+
+**功能说明：**
+- 上传图片文件（头像、图标等）
+- 支持的格式：jpg、jpeg、png、gif、webp等图片格式
+- 文件大小限制：最大5MB
+- 返回可访问的URL
+
+**请求格式：** `multipart/form-data`
+
+**请求参数：**
+| 参数 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| file | File | 是 | 图片文件 |
+
+**成功响应：**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "url": "http://localhost:8081/uploads/a1b2c3d4-e5f6-g7h8-i9j0.jpg",
+    "filename": "a1b2c3d4-e5f6-g7h8-i9j0.jpg",
+    "originalFilename": "avatar.jpg",
+    "size": "102400",
+    "contentType": "image/jpeg"
+  }
+}
+```
+
+**字段说明：**
+| 字段 | 类型 | 说明 |
+|-----|------|------|
+| url | String | 文件访问URL（可直接用于avatarUrl） |
+| filename | String | 服务器保存的文件名（UUID） |
+| originalFilename | String | 原始文件名 |
+| size | String | 文件大小（字节） |
+| contentType | String | 文件MIME类型 |
+
+**错误响应：**
+```json
+{
+  "code": 400,
+  "message": "文件不能为空",
+  "data": null
+}
+```
+
+```json
+{
+  "code": 400,
+  "message": "只支持图片格式",
+  "data": null
+}
+```
+
+```json
+{
+  "code": 400,
+  "message": "文件大小不能超过5MB",
+  "data": null
+}
+```
+
+**使用示例（curl）：**
+```bash
+curl -X POST http://localhost:8081/api/file/upload \
+  -F "file=@/path/to/avatar.jpg"
+```
+
+**使用示例（JavaScript/Fetch）：**
+```javascript
+const formData = new FormData();
+formData.append('file', file);
+
+const response = await fetch('http://localhost:8081/api/file/upload', {
+  method: 'POST',
+  body: formData
+});
+
+const result = await response.json();
+console.log(result.data.url); // 获取URL
+```
+
+**使用示例（React Native/Expo）：**
+```javascript
+import * as ImagePicker from 'expo-image-picker';
+
+// 1. 选择图片
+const result = await ImagePicker.launchImageLibraryAsync({
+  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  allowsEditing: true,
+  aspect: [1, 1],
+  quality: 0.8,
+});
+
+if (!result.canceled) {
+  // 2. 上传图片
+  const formData = new FormData();
+  formData.append('file', {
+    uri: result.assets[0].uri,
+    type: 'image/jpeg',
+    name: 'avatar.jpg',
+  });
+
+  const uploadResponse = await fetch('http://localhost:8081/api/file/upload', {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  const uploadResult = await uploadResponse.json();
+  const avatarUrl = uploadResult.data.url;
+
+  // 3. 更新用户资料
+  await fetch('http://localhost:8081/api/user/profile', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      avatarUrl: avatarUrl,
+    }),
+  });
+}
+```
+
+### 9.2 删除文件
+
+`DELETE /api/file/delete` （无需认证）
+
+**功能说明：**
+- 删除已上传的文件
+- 需要提供文件名（不是完整URL）
+
+**请求参数：**
+| 参数 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| filename | String | 是 | 文件名（从上传接口返回的filename） |
+
+**成功响应：**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+**错误响应：**
+```json
+{
+  "code": 404,
+  "message": "文件不存在",
+  "data": null
 }
 ```
 
@@ -1198,15 +1643,275 @@ Authorization: Bearer <token>
 
 ## 错误码说明
 
-| code | 说明 |
-|------|------|
-| 200 | 成功 |
-| 400 | 请求参数错误 |
-| 401 | 未授权或Token无效 |
-| 402 | 账号已存在 |
-| 403 | 账号不存在 |
-| 404 | 资源不存在 |
-| 405 | 账号或密码错误 |
-| 406 | 两次密码不一致 |
-| 407 | 账号格式错误 |
-| 500 | 服务器内部错误 |
+### 标准HTTP状态码
+
+| code | 说明 | 使用场景 | 示例 |
+|------|------|---------|------|
+| 200 | 成功 | 请求成功处理 | 登录成功、创建成功、查询成功 |
+| 400 | 请求参数错误 | 参数缺失、格式错误、类型错误 | 文件类型不支持、文件过大、必填参数缺失 |
+| 401 | 未授权 | Token无效、Token过期、未登录 | Token过期、Token格式错误、未提供Token |
+| 402 | 账号已存在 | 注册时账号重复 | 邮箱已被注册、手机号已被注册 |
+| 403 | 禁止操作 | 无权限、操作被拒绝 | 删除系统习惯、操作他人数据、权限不足 |
+| 404 | 资源不存在 | 请求的资源不存在 | 习惯不存在、微行为不存在、用户不存在 |
+| 405 | 账号或密码错误 | 登录失败 | 密码错误、账号不存在 |
+| 406 | 两次密码不一致 | 密码确认失败 | 重置密码时两次输入不一致 |
+| 407 | 账号格式错误 | 账号格式不正确 | 邮箱格式错误、手机号格式错误 |
+| 409 | 重复操作 | 操作冲突 | 今天已经打卡过了、重复提交 |
+| 500 | 服务器内部错误 | 未预期的错误 | 数据库错误、系统异常 |
+
+### 错误响应格式
+
+所有错误响应都遵循统一格式：
+
+```json
+{
+  "code": 错误码,
+  "message": "错误描述",
+  "data": null
+}
+```
+
+### 常见错误示例
+
+#### 1. 参数错误 (400)
+```json
+{
+  "code": 400,
+  "message": "文件不能为空",
+  "data": null
+}
+```
+
+```json
+{
+  "code": 400,
+  "message": "只支持图片格式",
+  "data": null
+}
+```
+
+```json
+{
+  "code": 400,
+  "message": "文件大小不能超过5MB",
+  "data": null
+}
+```
+
+#### 2. 未授权 (401)
+```json
+{
+  "code": 401,
+  "message": "Token无效或已过期",
+  "data": null
+}
+```
+
+#### 3. 禁止操作 (403)
+```json
+{
+  "code": 403,
+  "message": "系统推荐的习惯不能删除",
+  "data": null
+}
+```
+
+```json
+{
+  "code": 403,
+  "message": "无权操作该资源",
+  "data": null
+}
+```
+
+#### 4. 资源不存在 (404)
+```json
+{
+  "code": 404,
+  "message": "习惯不存在或无权操作",
+  "data": null
+}
+```
+
+```json
+{
+  "code": 404,
+  "message": "文件不存在",
+  "data": null
+}
+```
+
+#### 5. 登录失败 (405)
+```json
+{
+  "code": 405,
+  "message": "账号或密码错误",
+  "data": null
+}
+```
+
+#### 6. 密码不一致 (406)
+```json
+{
+  "code": 406,
+  "message": "两次密码不一致",
+  "data": null
+}
+```
+
+#### 7. 格式错误 (407)
+```json
+{
+  "code": 407,
+  "message": "账号格式错误",
+  "data": null
+}
+```
+
+#### 8. 重复操作 (409)
+```json
+{
+  "code": 409,
+  "message": "今天已经打卡过了",
+  "data": null
+}
+```
+
+#### 9. 服务器错误 (500)
+```json
+{
+  "code": 500,
+  "message": "服务器内部错误",
+  "data": null
+}
+```
+
+---
+
+## 时间格式说明
+
+### 时间字段格式规范
+
+| 字段类型 | 格式 | 示例 | 说明 |
+|---------|------|------|------|
+| createdAt | ISO8601 | `2026-01-17T10:30:00+08:00` | 创建时间，包含时区 |
+| updatedAt | ISO8601 | `2026-01-17T10:30:00+08:00` | 更新时间，包含时区 |
+| checkedAt | ISO8601 | `2026-01-17T08:30:00+08:00` | 打卡时间，包含时区 |
+| reminderTime | HH:mm:ss | `07:00:00` | 提醒时间，24小时制 |
+| redeemed_at | ISO8601 | `2026-01-17T15:00:00+08:00` | 兑换时间，包含时区 |
+| unlocked_at | ISO8601 | `2026-01-17T12:00:00+08:00` | 解锁时间，包含时区 |
+
+### ISO8601格式说明
+
+**格式：** `YYYY-MM-DDTHH:mm:ss+时区`
+
+**示例：**
+- `2026-01-17T10:30:00+08:00` - 北京时间 2026年1月17日 10:30:00
+- `2026-01-17T02:30:00Z` - UTC时间 2026年1月17日 02:30:00
+
+**前端解析：**
+```javascript
+// JavaScript
+const date = new Date("2026-01-17T10:30:00+08:00");
+console.log(date.toLocaleString()); // 自动转换为本地时间
+
+// React Native
+import { format } from 'date-fns';
+const formattedDate = format(new Date(createdAt), 'yyyy-MM-dd HH:mm:ss');
+```
+
+### reminderTime格式说明
+
+**格式：** `HH:mm:ss` (24小时制)
+
+**示例：**
+- `07:00:00` - 早上7点
+- `13:30:00` - 下午1点30分
+- `23:59:59` - 晚上11点59分59秒
+
+**前端处理：**
+```javascript
+// 如果前端使用 HH:mm 格式，需要补充秒数
+const reminderTime = "07:00"; // 前端输入
+const fullTime = reminderTime + ":00"; // 发送给后端
+
+// 或者后端兼容处理（推荐）
+// 后端接收 "07:00" 或 "07:00:00" 都可以
+```
+
+**后端兼容处理建议：**
+```java
+// 兼容 HH:mm 和 HH:mm:ss 两种格式
+String time = request.getReminderTime();
+if (time != null && !time.isEmpty()) {
+    if (time.length() == 5) {
+        time = time + ":00"; // 补充秒数
+    }
+    microBehavior.setReminderTime(LocalTime.parse(time));
+}
+```
+
+---
+
+## 安全建议
+
+### ⚠️ userId参数安全风险
+
+**当前问题：** 部分接口允许客户端传递userId，存在越权风险。
+
+**存在风险的接口：**
+```
+GET /api/habit/user/{userId}/micro-behaviors
+GET /api/checkin/user/{userId}
+GET /api/checkin/today/{userId}
+POST /api/checkin (body含userId)
+GET /api/reward/user/{userId}
+GET /api/stats/user/{userId}
+```
+
+**风险说明：**
+恶意用户可以修改userId参数，访问其他用户的数据。
+
+**建议：**
+1. 所有用户相关接口应从JWT Token中获取userId
+2. 不要信任客户端传递的userId
+3. 使用 `@RequestAttribute("userId")` 从拦截器获取
+
+**示例：**
+```java
+// ❌ 不安全
+@GetMapping("/user/{userId}/micro-behaviors")
+public Result<List<MicroBehavior>> getByUserId(@PathVariable Long userId) {
+    // 客户端可以修改userId访问其他用户数据
+}
+
+// ✅ 安全
+@GetMapping("/my-micro-behaviors")
+public Result<List<MicroBehavior>> getMyMicroBehaviors(
+        @RequestAttribute("userId") Long userId) {
+    // userId从JWT Token获取，无法伪造
+}
+```
+
+**前端调用：**
+```javascript
+// ❌ 不安全的调用
+fetch(`/api/habit/user/${userId}/micro-behaviors`)
+
+// ✅ 安全的调用
+fetch('/api/habit/my-micro-behaviors', {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+})
+```
+
+---
+
+## API版本规划
+
+当前版本：**v1.0**
+
+计划版本：**v2.0** （包含安全性改进）
+
+详见：`docs/API_CHANGES_v2.md`
