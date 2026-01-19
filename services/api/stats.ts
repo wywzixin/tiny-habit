@@ -42,8 +42,51 @@ export const getTodayCheckIns = async (userId: number): Promise<TodayCheckIn[]> 
   const response = await apiClient.get<ApiResponse<TodayCheckIn[]>>(
     `/api/stats/today-checkins/${userId}`
   );
-  console.log('今日打卡原始响应:', response.data);
-  console.log('今日打卡数据:', response.data.data);
-  console.log('第一条数据:', response.data.data?.[0]);
-  return response.data.data;
+  console.log('今日打卡接口原始响应:', response.data);
+  const rawData: any = response.data.data;
+  const list = Array.isArray(rawData)
+    ? rawData
+    : Array.isArray(rawData?.list)
+      ? rawData.list
+      : Array.isArray(rawData?.records)
+        ? rawData.records
+        : [];
+
+  const clean = (value: any) => (typeof value === 'string' ? value.trim() : value);
+
+  return list.map((item: any) => {
+    const icon =
+      clean(item.icon) ??
+      clean(item.microBehaviorIcon) ??
+      clean(item.behaviorIcon) ??
+      clean(item.habitIcon) ??
+      '✨';
+
+    const behavior =
+      clean(item.behavior) ||
+      clean(item.microBehavior) ||
+      clean(item.microBehaviorName) ||
+      clean(item.name) ||
+      clean(item.habitName) ||
+      '已完成';
+
+    const celebration =
+      clean(item.celebration) ||
+      clean(item.celebrate) ||
+      clean(item.celebrationText) ||
+      '';
+
+    const checkedAt =
+      item.checkedAt ?? item.checkInTime ?? item.createdAt ?? item.time ?? new Date().toISOString();
+
+    const pointsEarned = item.pointsEarned ?? item.points ?? item.score ?? 0;
+
+    return {
+      icon,
+      behavior,
+      celebration,
+      checkedAt,
+      pointsEarned,
+    };
+  });
 };

@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore, useHabitStore } from '../../stores';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useUserStats, useTodayCheckIns } from '../../services/api/hooks';
+import { useUserStats, useTodayCheckIns as useTodayStatsCheckIns } from '../../services/api/hooks/useStats';
 import { useMemo } from 'react';
 
 export default function StatsScreen() {
@@ -15,7 +15,7 @@ export default function StatsScreen() {
   const { data: cloudStats, isLoading: isLoadingStats, error: statsError } = useUserStats(user?.id);
   
   // 已登录：从后端 API 获取今日打卡数据
-  const { data: cloudTodayCheckIns, isLoading: isLoadingTodayCheckIns, error: todayCheckInsError } = useTodayCheckIns(user?.id);
+  const { data: cloudTodayCheckIns, isLoading: isLoadingTodayCheckIns, error: todayCheckInsError } = useTodayStatsCheckIns(user?.id);
 
   // 调试日志
   console.log('=== 统计页面调试 ===');

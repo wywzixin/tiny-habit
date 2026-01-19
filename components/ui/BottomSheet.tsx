@@ -7,6 +7,7 @@ type BottomSheetProps = {
   title?: string;
   height?: number | `${number}%`;
   onClose: () => void;
+  onDismiss?: () => void;
   leftLabel?: string;
   onLeftPress?: () => void;
   rightLabel?: string;
@@ -19,6 +20,7 @@ export function BottomSheet({
   title,
   height,
   onClose,
+  onDismiss,
   leftLabel,
   onLeftPress,
   rightLabel,
@@ -28,7 +30,7 @@ export function BottomSheet({
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} onDismiss={onDismiss}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Alert, InteractionManager } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Alert, InteractionManager, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -8,7 +8,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../stores';
 import { BottomSheet } from '../../components/ui/BottomSheet';
 import { uploadFile, updateProfile as updateProfileApi } from '../../services/api';
-import { useState as useReactState } from 'react';
 
 function genderLabel(g: 'male' | 'female' | 'unknown' | undefined) {
   if (g === 'male') return '男';
@@ -35,6 +34,7 @@ export default function UserInfoScreen() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [pendingPicker, setPendingPicker] = useState<'camera' | 'library' | null>(null);
 
   const [draftName, setDraftName] = useState(user?.username || '');
   const [draftGender, setDraftGender] = useState(user?.gender || 'unknown');
@@ -45,13 +45,33 @@ export default function UserInfoScreen() {
     return user.email || user.phone || '';
   }, [user]);
 
+  const handleAvatarSheetDismiss = () => {
+    if (!pendingPicker) return;
+    const next = pendingPicker;
+    setPendingPicker(null);
+    InteractionManager.runAfterInteractions(() => {
+      if (next === 'camera') {
+        pickFromCamera();
+      } else {
+        pickFromLibrary();
+      }
+    });
+  };
+
   const pickFromLibrary = async () => {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       console.log('相册权限:', perm);
       
       if (!perm.granted) {
-        Alert.alert('需要权限', '请允许访问相册以选择头像');
+        if (!perm.canAskAgain) {
+          Alert.alert('权限已关闭', '请在系统设置中允许访问相册', [
+            { text: '取消', style: 'cancel' },
+            { text: '去设置', onPress: () => Linking.openSettings() },
+          ]);
+        } else {
+          Alert.alert('需要权限', '请允许访问相册以选择头像');
+        }
         return;
       }
 
@@ -81,11 +101,19 @@ export default function UserInfoScreen() {
       console.log('相机权限:', perm);
       
       if (!perm.granted) {
-        Alert.alert('需要权限', '请允许使用相机以拍摄头像');
+        if (!perm.canAskAgain) {
+          Alert.alert('权限已关闭', '请在系统设置中允许使用相机', [
+            { text: '取消', style: 'cancel' },
+            { text: '去设置', onPress: () => Linking.openSettings() },
+          ]);
+        } else {
+          Alert.alert('需要权限', '请允许使用相机以拍摄头像');
+        }
         return;
       }
 
       const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.85,
@@ -301,13 +329,13 @@ export default function UserInfoScreen() {
         visible={showAvatarSheet}
         title="选择头像"
         onClose={() => setShowAvatarSheet(false)}
+        onDismiss={handleAvatarSheetDismiss}
       >
         <View className="px-5 pb-8">
           <TouchableOpacity
             onPress={() => { 
+              setPendingPicker('camera');
               setShowAvatarSheet(false);
-              // iOS 需要更长的延迟确保 Modal 完全关闭
-              setTimeout(() => pickFromCamera(), 500);
             }}
             activeOpacity={0.85}
             className="py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center"
@@ -317,9 +345,8 @@ export default function UserInfoScreen() {
 
           <TouchableOpacity
             onPress={() => { 
+              setPendingPicker('library');
               setShowAvatarSheet(false);
-              // iOS 需要更长的延迟确保 Modal 完全关闭
-              setTimeout(() => pickFromLibrary(), 500);
             }}
             activeOpacity={0.85}
             className="mt-3 py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center"
