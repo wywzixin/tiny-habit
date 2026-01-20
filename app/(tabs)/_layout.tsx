@@ -3,10 +3,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../stores';
+import { t } from '../../utils/i18n';
 
 export default function TabLayout() {
   const router = useRouter();
   const isDarkMode = useAuthStore((state) => state.isDarkMode);
+  const language = useAuthStore((state) => state.language);
 
   return (
     <Tabs
@@ -47,7 +49,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: '首页',
+          title: t(language, 'common.home'),
           tabBarIcon: ({ color }) => (
             <Ionicons name="home" size={22} color={color} />
           ),
@@ -56,7 +58,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="discover"
         options={{
-          title: '发现',
+          title: t(language, 'common.discover'),
           tabBarIcon: ({ color }) => (
             <Ionicons name="compass" size={22} color={color} />
           ),
@@ -92,7 +94,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="stats"
         options={{
-          title: '统计',
+          title: t(language, 'common.stats'),
           tabBarIcon: ({ color }) => (
             <Ionicons name="bar-chart" size={22} color={color} />
           ),
@@ -101,7 +103,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: '我的',
+          title: t(language, 'common.profile'),
           tabBarIcon: ({ color }) => (
             <Ionicons name="person" size={22} color={color} />
           ),

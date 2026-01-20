@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../stores';
 import { useRegister } from '../../services/api';
+import { t } from '../../utils/i18n';
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim().toLowerCase());
@@ -18,6 +19,7 @@ function isValidPhone(value: string) {
 export default function RegisterScreen() {
   const router = useRouter();
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
+  const language = useAuthStore((s) => s.language);
   
   // 使用 React Query mutation
   const registerMutation = useRegister();
@@ -60,7 +62,7 @@ export default function RegisterScreen() {
       >
         <View className="pt-2 pb-4">
           <View className="flex-row items-center justify-between">
-            <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">注册</Text>
+            <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">{t(language, 'auth.register')}</Text>
             <TouchableOpacity onPress={() => router.back()} activeOpacity={0.85} className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center">
               <Ionicons name="arrow-back" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
             </TouchableOpacity>
@@ -73,7 +75,7 @@ export default function RegisterScreen() {
             <TextInput
               value={username}
               onChangeText={setUsername}
-              placeholder="输入昵称"
+              placeholder={t(language, 'auth.username')}
               autoCapitalize="words"
               className="flex-1 ml-2 h-full text-[14px] font-semibold text-appText dark:text-appDarkText"
               placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
@@ -85,7 +87,7 @@ export default function RegisterScreen() {
             <TextInput
               value={identifier}
               onChangeText={setIdentifier}
-              placeholder="输入邮箱或手机号"
+              placeholder={t(language, 'auth.account')}
               autoCapitalize="none"
               keyboardType="default"
               className="flex-1 ml-2 h-full text-[14px] font-semibold text-appText dark:text-appDarkText"
@@ -98,7 +100,7 @@ export default function RegisterScreen() {
             <TextInput
               value={password}
               onChangeText={setPassword}
-              placeholder="设置登录密码（至少6位）"
+              placeholder={t(language, 'auth.password')}
               secureTextEntry={!showPassword}
               autoCapitalize="none"
               className="flex-1 ml-2 h-full text-[14px] font-semibold text-appText dark:text-appDarkText"
@@ -113,7 +115,7 @@ export default function RegisterScreen() {
           
           {registerMutation.isError && (
             <Text className="text-[12px] font-semibold text-red-500 px-2">
-              {registerMutation.meta?.getErrorMessage?.(registerMutation.error) || '注册失败'}
+              {registerMutation.meta?.getErrorMessage?.(registerMutation.error) || t(language, 'auth.registerFailed')}
             </Text>
           )}
         </View>
@@ -137,15 +139,15 @@ export default function RegisterScreen() {
                   ? 'text-white dark:text-appText' 
                   : 'text-appMuted dark:text-appDarkMuted'
               }`}>
-                注册并登录
+                {t(language, 'auth.registerCta')}
               </Text>
             )}
           </TouchableOpacity>
 
           <View className="mt-4 flex-row items-center justify-center">
-            <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted">已有账号？</Text>
+            <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted">{t(language, 'auth.hasAccount')}</Text>
             <TouchableOpacity onPress={() => router.replace('/auth/login')} activeOpacity={0.85} className="ml-1">
-              <Text className="text-[12px] font-extrabold text-primary">去登录</Text>
+              <Text className="text-[12px] font-extrabold text-primary">{t(language, 'auth.gotoLogin')}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -4,11 +4,14 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../stores';
 import { useUserStats } from '../../services/api/hooks/useStats';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { BottomSheet } from '../../components/ui/BottomSheet';
+import { getLocale, t } from '../../utils/i18n';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { isDarkMode, toggleDarkMode, isLoggedIn, user, updateUser } = useAuthStore();
+  const { isDarkMode, toggleDarkMode, isLoggedIn, user, updateUser, language, setLanguage } = useAuthStore();
+  const [showLanguageSheet, setShowLanguageSheet] = useState(false);
   
   // 获取最新的统计数据
   const { data: cloudStats } = useUserStats(user?.id);
@@ -47,22 +50,34 @@ export default function ProfileScreen() {
     router.replace('/auth/login');
   };
 
-  const todayLabel = new Date().toLocaleDateString('zh-CN', {
+  const todayLabel = new Date().toLocaleDateString(getLocale(language), {
     month: 'long',
     day: 'numeric',
     weekday: 'short',
   });
 
   const level = Math.max(1, Math.floor(totalPoints / 50) + 1);
-  const levelLabel = level <= 1 ? '新手' : level <= 3 ? '进阶' : level <= 6 ? '熟练' : '大师';
+  const levelLabel =
+    level <= 1
+      ? t(language, 'profile.levelBeginner')
+      : level <= 3
+        ? t(language, 'profile.levelIntermediate')
+        : level <= 6
+          ? t(language, 'profile.levelSkilled')
+          : t(language, 'profile.levelMaster');
 
   const menuItems = [
-    { icon: 'gift', label: '奖励中心', route: '/rewards' },
-    { icon: 'color-palette', label: '主题样式' },
-    { icon: 'globe', label: '语言设置' },
-    { icon: 'notifications', label: '通知提醒' },
-    { icon: 'book', label: '关于福格模型' },
-    { icon: 'chatbubble', label: '反馈建议' },
+    { icon: 'gift', label: t(language, 'profile.rewards'), route: '/rewards' },
+    { icon: 'color-palette', label: t(language, 'profile.theme') },
+    {
+      icon: 'globe',
+      label: t(language, 'profile.language'),
+      onPress: () => setShowLanguageSheet(true),
+      value: language === 'zh' ? t(language, 'profile.languageZh') : t(language, 'profile.languageEn'),
+    },
+    { icon: 'notifications', label: t(language, 'profile.notifications') },
+    { icon: 'book', label: t(language, 'profile.about') },
+    { icon: 'chatbubble', label: t(language, 'profile.feedback'), route: '/profile/feedback' },
   ];
 
   return (
@@ -77,7 +92,7 @@ export default function ProfileScreen() {
             {todayLabel}
           </Text>
           <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
-            我的
+            {t(language, 'profile.title')}
           </Text>
 
           <View className="mt-4">
@@ -99,7 +114,7 @@ export default function ProfileScreen() {
                     {isLoggedIn ? (
                       <>
                         <Text className="text-[18px] font-extrabold text-appText dark:text-appDarkText">
-                          {user?.username || '用户'}
+                          {user?.username || t(language, 'profile.defaultUser')}
                         </Text>
                         <View className="flex-row items-center gap-2 mt-1">
                           <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
@@ -115,7 +130,7 @@ export default function ProfileScreen() {
                     ) : (
                       <>
                         <Text className="text-[18px] font-extrabold text-appText dark:text-appDarkText">
-                          未登录
+                          {t(language, 'profile.notLoggedIn')}
                         </Text>
                         <TouchableOpacity
                           onPress={() => router.push('/auth/login')}
@@ -123,7 +138,7 @@ export default function ProfileScreen() {
                           className="mt-2 px-3 py-1.5 rounded-full bg-appText dark:bg-appDarkText self-start"
                         >
                           <Text className="text-white dark:text-appText text-[12px] font-extrabold">
-                            点我登录
+                            {t(language, 'auth.loginNow')}
                           </Text>
                         </TouchableOpacity>
                       </>
@@ -137,11 +152,20 @@ export default function ProfileScreen() {
 
         <View className="bg-appCard dark:bg-appDarkCard rounded-[22px] border border-appBorder dark:border-appDarkBorder overflow-hidden">
           {menuItems.map((item, index) => {
-            const enabled = Boolean(item.route);
+            const enabled = Boolean(item.route || item.onPress);
             return (
               <TouchableOpacity
                 key={item.label}
-                onPress={() => enabled && router.push(item.route as any)}
+                onPress={() => {
+                  if (!enabled) return;
+                  if (item.onPress) {
+                    item.onPress();
+                    return;
+                  }
+                  if (item.route) {
+                    router.push(item.route as any);
+                  }
+                }}
                 activeOpacity={enabled ? 0.85 : 1}
                 className={`px-4 py-4 flex-row items-center justify-between ${
                   index < menuItems.length - 1 ? 'border-b border-appBorder dark:border-appDarkBorder' : ''
@@ -158,9 +182,14 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
                 <View className="flex-row items-center gap-2">
+                  {item.value && (
+                    <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted">
+                      {item.value}
+                    </Text>
+                  )}
                   {!enabled && (
                     <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
-                      <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">即将上线</Text>
+                      <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">{t(language, 'common.comingSoon')}</Text>
                     </View>
                   )}
                   <Ionicons name="chevron-forward" size={16} color={isDarkMode ? '#44403c' : '#d6d3d1'} />
@@ -175,7 +204,7 @@ export default function ProfileScreen() {
                 <Ionicons name="moon" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
               </View>
               <View>
-                <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">深色模式</Text>
+                <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'profile.darkMode')}</Text>
               </View>
             </View>
             <Switch
@@ -191,6 +220,40 @@ export default function ProfileScreen() {
           Tiny Habits v1.0.0
         </Text>
       </ScrollView>
+
+      <BottomSheet
+        visible={showLanguageSheet}
+        title={t(language, 'profile.languageTitle')}
+        onClose={() => setShowLanguageSheet(false)}
+      >
+        <View className="px-5 pb-8 gap-3">
+          <TouchableOpacity
+            onPress={() => { setLanguage('zh'); setShowLanguageSheet(false); }}
+            activeOpacity={0.85}
+            className="py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder flex-row items-center justify-between px-4"
+          >
+            <Text className="text-appText dark:text-appDarkText font-extrabold">
+              {t(language, 'profile.languageZh')}
+            </Text>
+            {language === 'zh' && (
+              <Ionicons name="checkmark" size={18} color="#10B981" />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => { setLanguage('en'); setShowLanguageSheet(false); }}
+            activeOpacity={0.85}
+            className="py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder flex-row items-center justify-between px-4"
+          >
+            <Text className="text-appText dark:text-appDarkText font-extrabold">
+              {t(language, 'profile.languageEn')}
+            </Text>
+            {language === 'en' && (
+              <Ionicons name="checkmark" size={18} color="#10B981" />
+            )}
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </SafeAreaView>
   );
 }

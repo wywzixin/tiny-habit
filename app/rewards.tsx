@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BottomSheet } from '../components/ui/BottomSheet';
 import { useUserRewards, useCreateReward, useRedeemReward } from '../services/api/hooks';
 import { useUserStats } from '../services/api/hooks/useStats';
+import { getLocale, t } from '../utils/i18n';
 
 const icons = ['📚', '🎬', '🎮', '☕', '🍰', '🎁', '✈️', '🎸', '👕', '💄', '🎨', '🏃'];
 
@@ -17,6 +18,7 @@ export default function RewardsScreen() {
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
+  const language = useAuthStore((s) => s.language);
   
   // 本地存储（未登录用户）
   const { rewards: localRewards, addReward: addLocalReward, redeemReward: redeemLocalReward } = useRewardStore();
@@ -63,7 +65,7 @@ export default function RewardsScreen() {
   const [cost, setCost] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('📚');
 
-  const todayLabel = new Date().toLocaleDateString('zh-CN', {
+  const todayLabel = new Date().toLocaleDateString(getLocale(language), {
     month: 'long',
     day: 'numeric',
     weekday: 'short',
@@ -93,7 +95,7 @@ export default function RewardsScreen() {
     
     const costNum = parseInt(cost);
     if (costNum < 10) {
-      Alert.alert('提示', '所需行动值最低为 10');
+      Alert.alert(t(language, 'common.confirm'), t(language, 'rewards.minCost'));
       return;
     }
 
@@ -116,13 +118,13 @@ export default function RewardsScreen() {
       setCost('');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
-      Alert.alert('创建失败', error.message || '请稍后重试');
+      Alert.alert(t(language, 'rewards.addFailed'), error.message || t(language, 'common.tryLater'));
     }
   };
 
   const handleRedeem = async (id: string, cost: number) => {
     if (availablePoints < cost) {
-      Alert.alert('行动值不足', `需要 ${cost} 行动值，当前可用 ${availablePoints}`);
+      Alert.alert(t(language, 'rewards.pointsInsufficient'), `${t(language, 'rewards.needPoints')} ${cost}，${t(language, 'rewards.availablePoints')} ${availablePoints}`);
       return;
     }
 
@@ -140,7 +142,7 @@ export default function RewardsScreen() {
       
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
-      Alert.alert('兑换失败', error.message || '请稍后重试');
+      Alert.alert(t(language, 'rewards.redeemFailed'), error.message || t(language, 'common.tryLater'));
     }
   };
 
@@ -158,7 +160,7 @@ export default function RewardsScreen() {
                 {todayLabel}
               </Text>
               <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
-                奖励中心
+                {t(language, 'rewards.title')}
               </Text>
             </View>
 
@@ -180,7 +182,7 @@ export default function RewardsScreen() {
             >
               <View className="flex-row items-center justify-between">
                 <View>
-                  <Text className="text-white/90 text-[11px] font-bold">可用行动值</Text>
+                  <Text className="text-white/90 text-[11px] font-bold">{t(language, 'rewards.availablePoints')}</Text>
                   <Text className="text-white text-4xl font-extrabold mt-1">{availablePoints}</Text>
                 </View>
                 <View className="w-12 h-12 rounded-2xl bg-white/18 items-center justify-center">
@@ -189,10 +191,10 @@ export default function RewardsScreen() {
               </View>
               <View className="mt-4 flex-row gap-2">
                 <View className="px-3 py-2 rounded-2xl bg-white/15">
-                  <Text className="text-white/90 text-[11px] font-bold">累计 {totalPoints}</Text>
+                  <Text className="text-white/90 text-[11px] font-bold">{t(language, 'rewards.totalPoints')} {totalPoints}</Text>
                 </View>
                 <View className="px-3 py-2 rounded-2xl bg-white/15">
-                  <Text className="text-white/90 text-[11px] font-bold">已兑换 {redeemedPoints}</Text>
+                  <Text className="text-white/90 text-[11px] font-bold">{t(language, 'rewards.redeemedPoints')} {redeemedPoints}</Text>
                 </View>
               </View>
             </LinearGradient>
@@ -201,7 +203,7 @@ export default function RewardsScreen() {
 
         <View className="flex-row items-center justify-between mb-4">
           <Text className="text-base font-extrabold text-appText dark:text-appDarkText">
-            我的奖励
+            {t(language, 'rewards.myRewards')}
           </Text>
           <TouchableOpacity
             onPress={() => setShowModal(true)}
@@ -210,7 +212,7 @@ export default function RewardsScreen() {
           >
             <Ionicons name="add" size={16} color={isDarkMode ? '#0c0a09' : 'white'} />
             <Text className="text-[12px] font-extrabold text-white dark:text-appText">
-              添加奖励
+              {t(language, 'rewards.create')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -219,10 +221,10 @@ export default function RewardsScreen() {
           <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
             <Text className="text-4xl mb-3">🎁</Text>
             <Text className="text-sm font-extrabold text-appText dark:text-appDarkText">
-              还没有奖励
+              {t(language, 'rewards.empty')}
             </Text>
             <Text className="text-xs font-semibold text-appMuted dark:text-appDarkMuted mt-2 text-center leading-relaxed">
-              给自己一个小目标，达成后更有动力
+              {t(language, 'rewards.emptyHint')}
             </Text>
           </View>
         ) : (
@@ -252,7 +254,7 @@ export default function RewardsScreen() {
                       <View className="mt-2 flex-row items-center gap-2">
                         <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
                           <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
-                            {reward.cost} 行动值
+                            {reward.cost} {t(language, 'common.points')}
                           </Text>
                         </View>
                       </View>
@@ -261,7 +263,7 @@ export default function RewardsScreen() {
                     {redeemed ? (
                       <View className="px-3 py-2 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
                         <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
-                          已兑换
+                          {t(language, 'rewards.redeemed')}
                         </Text>
                       </View>
                     ) : (
@@ -276,7 +278,7 @@ export default function RewardsScreen() {
                         <Text className={`text-[12px] font-extrabold ${
                           canRedeem ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
                         }`}>
-                          兑换
+                          {t(language, 'rewards.redeem')}
                         </Text>
                       </TouchableOpacity>
                     )}
@@ -290,30 +292,30 @@ export default function RewardsScreen() {
 
       <BottomSheet
         visible={showModal}
-        title="添加奖励"
+        title={t(language, 'rewards.create')}
         onClose={() => setShowModal(false)}
       >
         <View className="px-5 pb-8">
-          <Text className="text-xs font-bold text-appMuted dark:text-appDarkMuted mb-2">奖励名称</Text>
+          <Text className="text-xs font-bold text-appMuted dark:text-appDarkMuted mb-2">{t(language, 'rewards.rewardName')}</Text>
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="例如：买一本书"
+            placeholder={t(language, 'rewards.rewardNamePlaceholder')}
             className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] px-4 py-4 text-[14px] font-semibold text-appText dark:text-appDarkText mb-4"
             placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
           />
 
-          <Text className="text-xs font-bold text-appMuted dark:text-appDarkMuted mb-2">所需行动值</Text>
+          <Text className="text-xs font-bold text-appMuted dark:text-appDarkMuted mb-2">{t(language, 'rewards.rewardCost')}</Text>
           <TextInput
             value={cost}
             onChangeText={setCost}
-            placeholder="例如：50"
+            placeholder={t(language, 'rewards.costPlaceholder')}
             keyboardType="numeric"
             className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] px-4 py-4 text-[14px] font-semibold text-appText dark:text-appDarkText mb-4"
             placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
           />
 
-          <Text className="text-xs font-bold text-appMuted dark:text-appDarkMuted mb-2">选择图标</Text>
+          <Text className="text-xs font-bold text-appMuted dark:text-appDarkMuted mb-2">{t(language, 'rewards.selectIcon')}</Text>
           <View className="flex-row flex-wrap gap-2 mb-5">
             {icons.map((icon) => (
               <TouchableOpacity
@@ -336,7 +338,7 @@ export default function RewardsScreen() {
             activeOpacity={0.9}
             className="bg-appText dark:bg-appDarkText py-4 rounded-[22px] items-center"
           >
-            <Text className="text-white dark:text-appText font-extrabold">确认添加</Text>
+            <Text className="text-white dark:text-appText font-extrabold">{t(language, 'common.confirm')}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheet>

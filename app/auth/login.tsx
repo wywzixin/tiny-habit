@@ -6,6 +6,7 @@ import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../stores';
 import { useLogin } from '../../services/api';
+import { t } from '../../utils/i18n';
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim().toLowerCase());
@@ -18,6 +19,7 @@ function isValidPhone(value: string) {
 export default function LoginScreen() {
   const router = useRouter();
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
+  const language = useAuthStore((s) => s.language);
   
   // 使用 React Query mutation
   const loginMutation = useLogin();
@@ -65,7 +67,7 @@ export default function LoginScreen() {
           <View>
             <View className="pb-6">
               <View className="flex-row items-center justify-between">
-                <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">登录</Text>
+                <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">{t(language, 'auth.login')}</Text>
                 <TouchableOpacity
                   onPress={() => router.back()}
                   activeOpacity={0.85}
@@ -82,7 +84,7 @@ export default function LoginScreen() {
                 <TextInput
                   value={identifier}
                   onChangeText={setIdentifier}
-                  placeholder="输入邮箱或手机号"
+                  placeholder={t(language, 'auth.account')}
                   autoCapitalize="none"
                   keyboardType="default"
                   className="flex-1 ml-2 h-full text-[14px] font-semibold text-appText dark:text-appDarkText"
@@ -97,7 +99,7 @@ export default function LoginScreen() {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
-                  placeholder="输入密码"
+                  placeholder={t(language, 'auth.password')}
                   autoCapitalize="none"
                   className="flex-1 ml-2 h-full text-[14px] font-semibold text-appText dark:text-appDarkText"
                   placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
@@ -117,12 +119,12 @@ export default function LoginScreen() {
                 <View className="flex-1">
                   {loginMutation.isError ? (
                     <Text className="text-[12px] font-semibold text-red-500">
-                      {loginMutation.meta?.getErrorMessage?.(loginMutation.error) || '登录失败'}
+                      {loginMutation.meta?.getErrorMessage?.(loginMutation.error) || t(language, 'auth.loginFailed')}
                     </Text>
                   ) : null}
                 </View>
                 <TouchableOpacity onPress={() => router.push('/auth/forgot')} activeOpacity={0.85}>
-                  <Text className="text-[12px] font-extrabold text-primary">忘记密码？</Text>
+                  <Text className="text-[12px] font-extrabold text-primary">{t(language, 'auth.forgotPassword')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -144,15 +146,15 @@ export default function LoginScreen() {
                   <Text className={`text-[14px] font-extrabold ${
                     validIdentifier && validPassword ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
                   }`}>
-                    登录
+                    {t(language, 'auth.loginCta')}
                   </Text>
                 )}
               </TouchableOpacity>
 
               <View className="mt-4 flex-row items-center justify-center">
-                <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted">没有账号？</Text>
+                <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted">{t(language, 'auth.noAccount')}</Text>
                 <TouchableOpacity onPress={() => router.push('/auth/register')} activeOpacity={0.85} className="ml-1">
-                  <Text className="text-[12px] font-extrabold text-primary">去注册</Text>
+                  <Text className="text-[12px] font-extrabold text-primary">{t(language, 'auth.gotoRegister')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -161,7 +163,7 @@ export default function LoginScreen() {
           <View className="pt-10">
             <View className="flex-row items-center gap-3">
               <View className="flex-1 h-px bg-appBorder dark:bg-appDarkBorder" />
-              <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">其他方式</Text>
+              <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">{t(language, 'auth.or')}</Text>
               <View className="flex-1 h-px bg-appBorder dark:bg-appDarkBorder" />
             </View>
             <View className="mt-4 flex-row items-center justify-center gap-4">

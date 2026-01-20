@@ -6,33 +6,38 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useHabitStore, useAuthStore } from '../../stores';
-import { HabitCard, CelebrationModal } from '../../components/habit';
+import { HabitCard, CelebrationModal, ConfirmModal } from '../../components/habit';
 import { getTodayBackendDay } from '../../utils/dateHelper';
-import { useUserMicroBehaviors, useCheckIn, useTodayCheckIns } from '../../services/api/hooks';
+import { useUserMicroBehaviors, useCheckIn, useTodayCheckIns, useCancelCheckIn } from '../../services/api/hooks';
 import { Alert } from 'react-native';
+import { getLocale, t } from '../../utils/i18n';
 
 export default function HomeScreen() {
   const router = useRouter();
   const [showCelebration, setShowCelebration] = useState(false);
   const [currentCelebration, setCurrentCelebration] = useState('');
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [behaviorToCancel, setBehaviorToCancel] = useState<any>(null);
 
   const { todayCheckIns: localCheckIns, checkIn: localCheckIn, uncheckIn: localUncheckIn } = useHabitStore();
   const user = useAuthStore((s) => s.user);
   const isDarkMode = useAuthStore((state) => state.isDarkMode);
+  const language = useAuthStore((state) => state.language);
   const totalPoints = user?.totalPoints || 0;
-  
+
   // 已登录：从后端获取用户的微行为列表和今日打卡记录
   const { data: cloudBehaviors = [], isLoading, error } = useUserMicroBehaviors(user?.id);
   const { data: cloudCheckIns = [] } = useTodayCheckIns(user?.id);
   const checkInMutation = useCheckIn();
-  
+  const cancelCheckInMutation = useCancelCheckIn();
+
   // 未登录：使用本地数据
   const localBehaviors = useHabitStore((s) => s.microBehaviors);
-  
+
   // 根据登录状态选择数据源
   const microBehaviors = user?.id ? cloudBehaviors : localBehaviors;
-  const todayCheckIns = user?.id 
-    ? cloudCheckIns.map(c => c.microBehaviorId.toString()) 
+  const todayCheckIns = user?.id
+    ? cloudCheckIns.map(c => c.microBehaviorId.toString())
     : localCheckIns;
 
   const todayBehaviors = microBehaviors.filter((b) => {
@@ -41,7 +46,7 @@ export default function HomeScreen() {
   });
 
   const checkedCount = todayBehaviors.filter((b) => todayCheckIns.includes(b.id)).length;
-  const todayLabel = new Date().toLocaleDateString('zh-CN', {
+  const todayLabel = new Date().toLocaleDateString(getLocale(language), {
     month: 'long',
     day: 'numeric',
     weekday: 'short',
@@ -67,9 +72,9 @@ export default function HomeScreen() {
           
           // 友好的错误提示
           if (error.message?.includes('已经打卡')) {
-            Alert.alert('提示', '今天已经打卡过了');
+            Alert.alert(t(language, 'common.confirm'), t(language, 'home.checkinDone'));
           } else {
-            Alert.alert('打卡失败', error.message || '请稍后重试');
+            Alert.alert(t(language, 'home.checkinFailed'), error.message || t(language, 'common.tryLater'));
           }
         }
       } 
@@ -81,14 +86,37 @@ export default function HomeScreen() {
         setShowCelebration(true);
       }
     } else {
-      // 取消打卡（仅未登录用户支持）
-      if (!user?.id) {
-        localUncheckIn(behavior.id);
-      } else {
-        Alert.alert('提示', '已打卡的记录无法取消');
-      }
+      // 取消打卡 - 显示自定义确认弹窗
+      setBehaviorToCancel(behavior);
+      setShowCancelConfirm(true);
     }
   }, [todayCheckIns, user?.id, checkInMutation, localCheckIn, localUncheckIn]);
+
+  // 确认取消打卡
+  const handleConfirmCancel = async () => {
+    if (!behaviorToCancel) return;
+
+    if (!user?.id) {
+      // 未登录用户：使用本地存储
+      localUncheckIn(behaviorToCancel.id);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    } else {
+      // 已登录用户：调用后端接口
+      try {
+        await cancelCheckInMutation.mutateAsync({
+          microBehaviorId: Number(behaviorToCancel.id),
+          habitId: behaviorToCancel.habitId ? Number(behaviorToCancel.habitId) : null,
+        });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      } catch (error: any) {
+        console.error('取消打卡失败:', error);
+        Alert.alert(t(language, 'common.error'), error.message || t(language, 'common.tryLater'));
+      }
+    }
+
+    setShowCancelConfirm(false);
+    setBehaviorToCancel(null);
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg">
@@ -104,24 +132,15 @@ export default function HomeScreen() {
                 {todayLabel}
               </Text>
               <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
-                我的配方
+                {t(language, 'common.home')}
               </Text>
             </View>
 
-            <View className="flex-row items-center gap-2">
-              <View className="flex-row items-center gap-1.5 bg-appCard dark:bg-appDarkCard px-3 py-2 rounded-2xl border border-appBorder dark:border-appDarkBorder">
-                <Ionicons name="flash" size={16} color="#F9A825" />
-                <Text className="text-sm font-extrabold text-appText dark:text-appDarkText">
-                  {totalPoints}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => router.push('/create')}
-                activeOpacity={0.85}
-                className="w-10 h-10 rounded-2xl bg-appText dark:bg-appDarkText items-center justify-center"
-              >
-                <Ionicons name="add" size={20} color={isDarkMode ? '#0c0a09' : 'white'} />
-              </TouchableOpacity>
+            <View className="flex-row items-center gap-1.5 bg-appCard dark:bg-appDarkCard px-3 py-2 rounded-2xl border border-appBorder dark:border-appDarkBorder">
+              <Ionicons name="flash" size={16} color="#F9A825" />
+              <Text className="text-sm font-extrabold text-appText dark:text-appDarkText">
+                {totalPoints}
+              </Text>
             </View>
           </View>
 
@@ -133,25 +152,18 @@ export default function HomeScreen() {
               colors={isDarkMode ? ['#059669', '#10B981'] : ['#10B981', '#34D399']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={{ borderRadius: 22, padding: 16 }}
+              style={{ borderRadius: 20, padding: 14 }}
             >
               <View className="flex-row items-center justify-between">
-                <View className="flex-1 pr-4">
-                  <View className="flex-row items-center gap-2">
-                    <View className="bg-white/15 px-2.5 py-1 rounded-full">
-                      <Text className="text-white text-[11px] font-bold">✨ 今日能量</Text>
-                    </View>
-                    <View className="bg-white/15 px-2.5 py-1 rounded-full">
-                      <Text className="text-white text-[11px] font-bold">
-                        {checkedCount}/{todayBehaviors.length} 已完成
-                      </Text>
-                    </View>
+                <View className="flex-1 pr-3">
+                  <View className="bg-white/15 px-2.5 py-0.5 rounded-full self-start">
+                    <Text className="text-white text-[11px] font-bold">✨ {t(language, 'home.energy')}</Text>
                   </View>
-                  <Text className="text-white text-[15px] font-bold leading-relaxed mt-3">
-                    每一个微小的开始，都通向伟大的改变。
+                  <Text className="text-white text-[14px] font-bold leading-relaxed mt-2">
+                    {t(language, 'home.energyLine')}
                   </Text>
                 </View>
-                <View className="w-12 h-12 rounded-2xl bg-white/18 items-center justify-center">
+                <View className="w-11 h-11 rounded-2xl bg-white/18 items-center justify-center">
                   <Text className="text-2xl">🌿</Text>
                 </View>
               </View>
@@ -162,16 +174,16 @@ export default function HomeScreen() {
         <View className="flex-row items-center justify-between mb-3">
           <View>
             <Text className="text-base font-extrabold text-appText dark:text-appDarkText">
-              今天
+              {t(language, 'home.today')}
             </Text>
             <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-0.5">
-              建议从最简单的一条开始
+              {t(language, 'home.startSimple')}
             </Text>
           </View>
           {todayBehaviors.length > 0 && (
             <View className="px-3 py-1.5 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder">
               <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
-                {todayBehaviors.length} 条
+                {todayBehaviors.length} {t(language, 'common.items')}
               </Text>
             </View>
           )}
@@ -182,21 +194,21 @@ export default function HomeScreen() {
             <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
               <ActivityIndicator size="large" color="#10B981" />
               <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed mt-3">
-                加载中...
+                {t(language, 'common.loading')}
               </Text>
             </View>
           ) : error ? (
             <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
               <Text className="text-4xl mb-3">⚠️</Text>
               <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed">
-                加载失败，请稍后重试
+                {t(language, 'discover.loadingFailed')}
               </Text>
             </View>
           ) : todayBehaviors.length === 0 ? (
             <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
               <Text className="text-4xl mb-3">🌱</Text>
               <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed">
-                还没有今天要做的配方
+                {t(language, 'home.noToday')}
               </Text>
               <TouchableOpacity
                 onPress={() => router.push('/create')}
@@ -204,7 +216,7 @@ export default function HomeScreen() {
                 className="mt-5 bg-appText dark:bg-appDarkText px-4 py-3 rounded-2xl"
               >
                 <Text className="text-white dark:text-appText font-bold">
-                  创建第一个配方
+                  {t(language, 'home.createFirst')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -226,6 +238,19 @@ export default function HomeScreen() {
         visible={showCelebration}
         celebration={currentCelebration}
         onClose={() => setShowCelebration(false)}
+      />
+
+      <ConfirmModal
+        visible={showCancelConfirm}
+        title={t(language, 'home.cancelTitle')}
+        message={t(language, 'home.cancelMessage')}
+        cancelText={t(language, 'home.cancelKeep')}
+        confirmText={t(language, 'home.cancelConfirm')}
+        onCancel={() => {
+          setShowCancelConfirm(false);
+          setBehaviorToCancel(null);
+        }}
+        onConfirm={handleConfirmCancel}
       />
     </SafeAreaView>
   );

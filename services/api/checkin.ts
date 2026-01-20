@@ -53,3 +53,30 @@ export const getTodayCheckIns = async (userId: number): Promise<CheckInRecord[]>
   );
   return response.data.data;
 };
+
+/**
+ * 取消打卡请求参数
+ */
+export interface CancelCheckInRequest {
+  microBehaviorId: number;
+  habitId: number | null; // 可选，从配方库添加的微行为可以为 null
+}
+
+/**
+ * 取消打卡响应
+ */
+export interface CancelCheckInResponse {
+  pointsDeducted: number;
+}
+
+/**
+ * 取消打卡
+ * POST /api/checkin/cancel
+ */
+export const cancelCheckIn = async (data: CancelCheckInRequest): Promise<CancelCheckInResponse> => {
+  const response = await apiClient.post<ApiResponse<CancelCheckInResponse>>(
+    '/api/checkin/cancel',
+    data
+  );
+  return response.data.data;
+};

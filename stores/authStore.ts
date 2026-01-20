@@ -24,12 +24,14 @@ interface AuthState {
   
   // UI 状态
   isDarkMode: boolean;
+  language: 'zh' | 'en';
   
   // Actions
   setAuth: (token: string, user: User) => void;
   clearAuth: () => void;
   updateUser: (user: Partial<User>) => void;
   toggleDarkMode: () => void;
+  setLanguage: (language: 'zh' | 'en') => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -40,6 +42,7 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       user: null,
       isDarkMode: false,
+      language: 'zh',
       
       // 设置认证信息（登录/注册成功后调用）
       setAuth: (token, user) => {
@@ -69,6 +72,9 @@ export const useAuthStore = create<AuthState>()(
       // 切换深色模式
       toggleDarkMode: () => {
         set((state) => ({ isDarkMode: !state.isDarkMode }));
+      },
+      setLanguage: (language) => {
+        set({ language });
       },
     }),
     {

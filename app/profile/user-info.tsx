@@ -8,17 +8,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../stores';
 import { BottomSheet } from '../../components/ui/BottomSheet';
 import { uploadFile, updateProfile as updateProfileApi } from '../../services/api';
-
-function genderLabel(g: 'male' | 'female' | 'unknown' | undefined) {
-  if (g === 'male') return '男';
-  if (g === 'female') return '女';
-  return '未知';
-}
+import { t } from '../../utils/i18n';
 
 export default function UserInfoScreen() {
   const router = useRouter();
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
-  const { user, isLoggedIn, updateUser, clearAuth } = useAuthStore();
+  const { user, isLoggedIn, updateUser, clearAuth, language } = useAuthStore();
   
   const logout = () => {
     clearAuth();
@@ -65,12 +60,12 @@ export default function UserInfoScreen() {
       
       if (!perm.granted) {
         if (!perm.canAskAgain) {
-          Alert.alert('权限已关闭', '请在系统设置中允许访问相册', [
-            { text: '取消', style: 'cancel' },
-            { text: '去设置', onPress: () => Linking.openSettings() },
+          Alert.alert(t(language, 'auth.permissionBlocked'), t(language, 'auth.photoPermission'), [
+            { text: t(language, 'common.cancel'), style: 'cancel' },
+            { text: t(language, 'auth.openSettings'), onPress: () => Linking.openSettings() },
           ]);
         } else {
-          Alert.alert('需要权限', '请允许访问相册以选择头像');
+          Alert.alert(t(language, 'auth.permissionRequired'), t(language, 'auth.photoPermission'));
         }
         return;
       }
@@ -91,7 +86,7 @@ export default function UserInfoScreen() {
       await uploadAvatar(asset.uri);
     } catch (error) {
       console.error('选择相册失败:', error);
-      Alert.alert('错误', '选择相册失败');
+      Alert.alert(t(language, 'common.error'), t(language, 'common.tryLater'));
     }
   };
 
@@ -102,12 +97,12 @@ export default function UserInfoScreen() {
       
       if (!perm.granted) {
         if (!perm.canAskAgain) {
-          Alert.alert('权限已关闭', '请在系统设置中允许使用相机', [
-            { text: '取消', style: 'cancel' },
-            { text: '去设置', onPress: () => Linking.openSettings() },
+          Alert.alert(t(language, 'auth.permissionBlocked'), t(language, 'auth.cameraPermission'), [
+            { text: t(language, 'common.cancel'), style: 'cancel' },
+            { text: t(language, 'auth.openSettings'), onPress: () => Linking.openSettings() },
           ]);
         } else {
-          Alert.alert('需要权限', '请允许使用相机以拍摄头像');
+          Alert.alert(t(language, 'auth.permissionRequired'), t(language, 'auth.cameraPermission'));
         }
         return;
       }
@@ -128,7 +123,7 @@ export default function UserInfoScreen() {
       await uploadAvatar(asset.uri);
     } catch (error) {
       console.error('拍照失败:', error);
-      Alert.alert('错误', '拍照失败');
+      Alert.alert(t(language, 'common.error'), t(language, 'common.tryLater'));
     }
   };
   
@@ -149,7 +144,7 @@ export default function UserInfoScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
       console.error('上传头像失败:', error);
-      Alert.alert('上传失败', '头像上传失败，请稍后重试');
+      Alert.alert(t(language, 'common.error'), t(language, 'profile.avatarUploadFailed'));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setUploading(false);
@@ -177,10 +172,15 @@ export default function UserInfoScreen() {
       
       setHasChanges(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('成功', '个人信息已更新');
+      Alert.alert(t(language, 'common.success'), t(language, 'profile.infoUpdated'), [
+        {
+          text: t(language, 'common.confirm'),
+          onPress: () => router.replace('/(tabs)/profile'),
+        },
+      ]);
     } catch (error: any) {
       console.error('更新失败:', error);
-      Alert.alert('保存失败', '个人信息保存失败，请稍后重试');
+      Alert.alert(t(language, 'common.error'), t(language, 'profile.saveFailed'));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setSaving(false);
@@ -191,14 +191,14 @@ export default function UserInfoScreen() {
     return (
       <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg items-center justify-center px-6">
         <Text className="text-[14px] font-semibold text-appMuted dark:text-appDarkMuted">
-          请先登录
+          {t(language, 'auth.loginRequired')}
         </Text>
         <TouchableOpacity
           onPress={() => router.push('/auth/login')}
           activeOpacity={0.85}
           className="mt-4 px-4 py-3 rounded-[22px] bg-appText dark:bg-appDarkText"
         >
-          <Text className="text-white dark:text-appText font-extrabold">去登录</Text>
+          <Text className="text-white dark:text-appText font-extrabold">{t(language, 'auth.gotoLogin')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -216,7 +216,7 @@ export default function UserInfoScreen() {
             <Ionicons name="arrow-back" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
           </TouchableOpacity>
           <Text className="text-base font-extrabold text-appText dark:text-appDarkText">
-            用户信息
+            {t(language, 'profile.userInfo')}
           </Text>
           <TouchableOpacity
             onPress={handleSave}
@@ -229,7 +229,7 @@ export default function UserInfoScreen() {
             <Text className={`text-sm font-extrabold ${
               hasChanges && !saving ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
             }`}>
-              {saving ? '保存中...' : '保存'}
+              {saving ? t(language, 'common.saving') : t(language, 'common.save')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -254,7 +254,7 @@ export default function UserInfoScreen() {
               )}
               {uploading && (
                 <View className="absolute inset-0 bg-black/50 items-center justify-center">
-                  <Text className="text-white text-xs">上传中...</Text>
+                  <Text className="text-white text-xs">{t(language, 'profile.uploading')}</Text>
                 </View>
               )}
             </View>
@@ -266,12 +266,12 @@ export default function UserInfoScreen() {
 
         <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] overflow-hidden">
           <View className="px-4 py-4 flex-row items-center justify-between border-b border-appBorder dark:border-appDarkBorder">
-            <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">昵称</Text>
+            <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'profile.nickname')}</Text>
             <View className="flex-1 ml-4">
               <TextInput
                 value={draftName}
                 onChangeText={(text) => { setDraftName(text); setHasChanges(true); }}
-                placeholder="输入昵称"
+                placeholder={t(language, 'profile.nickname')}
                 className="text-right text-[14px] font-semibold text-appText dark:text-appDarkText"
                 placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
               />
@@ -283,35 +283,39 @@ export default function UserInfoScreen() {
             activeOpacity={0.85}
             className="px-4 py-4 flex-row items-center justify-between border-b border-appBorder dark:border-appDarkBorder"
           >
-            <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">性别</Text>
+            <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'profile.gender')}</Text>
             <View className="flex-row items-center gap-2">
               <Text className="text-[14px] font-semibold text-appMuted dark:text-appDarkMuted">
-                {genderLabel(draftGender)}
+                {draftGender === 'male'
+                  ? t(language, 'profile.genderMale')
+                  : draftGender === 'female'
+                    ? t(language, 'profile.genderFemale')
+                    : t(language, 'profile.genderUnknown')}
               </Text>
               <Ionicons name="chevron-forward" size={16} color={isDarkMode ? '#44403c' : '#d6d3d1'} />
             </View>
           </TouchableOpacity>
 
           <View className="px-4 py-4 flex-row items-center justify-between border-b border-appBorder dark:border-appDarkBorder">
-            <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">账号</Text>
+            <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'profile.account')}</Text>
             <Text className="text-[14px] font-semibold text-appMuted dark:text-appDarkMuted">
               {identifierText}
             </Text>
           </View>
 
           <View className="px-4 py-4 flex-row items-center justify-between border-b border-appBorder dark:border-appDarkBorder">
-            <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">会员</Text>
+            <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'profile.member')}</Text>
             <Text className="text-[14px] font-semibold text-appMuted dark:text-appDarkMuted">
-              未开通
+              {t(language, 'profile.notActive')}
             </Text>
           </View>
 
           <TouchableOpacity
-            onPress={() => Alert.alert('提示', '功能开发中')}
+            onPress={() => Alert.alert(t(language, 'common.confirm'), t(language, 'common.comingSoon'))}
             activeOpacity={0.85}
             className="px-4 py-4 flex-row items-center justify-between"
           >
-            <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">账户安全</Text>
+            <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'profile.accountSecurity')}</Text>
             <Ionicons name="chevron-forward" size={16} color={isDarkMode ? '#44403c' : '#d6d3d1'} />
           </TouchableOpacity>
         </View>
@@ -321,13 +325,13 @@ export default function UserInfoScreen() {
           activeOpacity={0.85}
           className="mt-6 py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center"
         >
-          <Text className="text-red-500 font-extrabold">退出登录</Text>
+          <Text className="text-red-500 font-extrabold">{t(language, 'profile.logout')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
       <BottomSheet
         visible={showAvatarSheet}
-        title="选择头像"
+        title={t(language, 'profile.avatarSelect')}
         onClose={() => setShowAvatarSheet(false)}
         onDismiss={handleAvatarSheetDismiss}
       >
@@ -340,7 +344,7 @@ export default function UserInfoScreen() {
             activeOpacity={0.85}
             className="py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center"
           >
-            <Text className="text-appText dark:text-appDarkText font-extrabold">拍照</Text>
+            <Text className="text-appText dark:text-appDarkText font-extrabold">{t(language, 'profile.takePhoto')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -351,7 +355,7 @@ export default function UserInfoScreen() {
             activeOpacity={0.85}
             className="mt-3 py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center"
           >
-            <Text className="text-appText dark:text-appDarkText font-extrabold">从相册选择</Text>
+            <Text className="text-appText dark:text-appDarkText font-extrabold">{t(language, 'profile.chooseFromAlbum')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -359,14 +363,14 @@ export default function UserInfoScreen() {
             activeOpacity={0.85}
             className="mt-3 py-4 rounded-[22px] bg-appText dark:bg-appDarkText items-center"
           >
-            <Text className="text-white dark:text-appText font-extrabold">取消</Text>
+            <Text className="text-white dark:text-appText font-extrabold">{t(language, 'common.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheet>
 
       <BottomSheet
         visible={showGenderSheet}
-        title="选择性别"
+        title={t(language, 'profile.gender')}
         onClose={() => setShowGenderSheet(false)}
       >
         <View className="px-5 pb-8 gap-3">
@@ -378,7 +382,11 @@ export default function UserInfoScreen() {
               className="py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder flex-row items-center justify-between px-4"
             >
               <Text className="text-appText dark:text-appDarkText font-extrabold">
-                {genderLabel(g)}
+                {g === 'male'
+                  ? t(language, 'profile.genderMale')
+                  : g === 'female'
+                    ? t(language, 'profile.genderFemale')
+                    : t(language, 'profile.genderUnknown')}
               </Text>
               {draftGender === g && (
                 <Ionicons name="checkmark" size={18} color="#10B981" />

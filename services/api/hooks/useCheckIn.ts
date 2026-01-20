@@ -65,3 +65,44 @@ export const useTodayCheckIns = (userId?: number) => {
     enabled: !!userId,
   });
 };
+
+/**
+ * 取消打卡 mutation
+ */
+export const useCancelCheckIn = () => {
+  const user = useAuthStore((state) => state.user);
+  const updateUser = useAuthStore((state) => state.updateUser);
+
+  return useMutation({
+    mutationFn: checkinApi.cancelCheckIn,
+    onSuccess: (data) => {
+      // 扣除用户积分
+      if (user) {
+        updateUser({
+          totalPoints: user.totalPoints - (data.pointsDeducted || 10),
+          availablePoints: user.availablePoints - (data.pointsDeducted || 10),
+        });
+      }
+
+      // 刷新打卡记录和微行为列表
+      if (user?.id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.checkIns(user.id.toString()),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.todayCheckIns(user.id.toString()),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.userMicroBehaviors(user.id.toString()),
+        });
+        // 刷新统计数据
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.userStats(user.id.toString()),
+        });
+      }
+    },
+    onError: (error: any) => {
+      console.error('取消打卡失败:', error);
+    },
+  });
+};

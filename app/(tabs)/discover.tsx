@@ -5,15 +5,23 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../stores';
 import { useRecipeTemplates, useAddFromTemplate } from '../../services/api/hooks';
-
-const categories = ['全部', '推荐', '健康', '学习', '心理', '运动'];
+import { getLocale, t } from '../../utils/i18n';
 
 export default function DiscoverScreen() {
   const isDarkMode = useAuthStore((state) => state.isDarkMode);
   const user = useAuthStore((s) => s.user);
+  const language = useAuthStore((s) => s.language);
   const [search, setSearch] = useState('');
   const [addedIds, setAddedIds] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('全部');
+  const categoryOptions = [
+    { value: '全部', label: t(language, 'discover.all') },
+    { value: '推荐', label: t(language, 'discover.categoryRecommend') },
+    { value: '健康', label: t(language, 'discover.categoryHealth') },
+    { value: '学习', label: t(language, 'discover.categoryStudy') },
+    { value: '心理', label: t(language, 'discover.categoryMind') },
+    { value: '运动', label: t(language, 'discover.categorySport') },
+  ];
 
   // 获取配方模板列表（已登录用户从后端获取，未登录用户不请求）
   const { data: recipes = [], isLoading, error } = useRecipeTemplates(
@@ -24,7 +32,7 @@ export default function DiscoverScreen() {
   // 从模板添加微行为
   const addFromTemplateMutation = useAddFromTemplate();
 
-  const todayLabel = new Date().toLocaleDateString('zh-CN', {
+  const todayLabel = new Date().toLocaleDateString(getLocale(language), {
     month: 'long',
     day: 'numeric',
     weekday: 'short',
@@ -38,7 +46,7 @@ export default function DiscoverScreen() {
   const handleAdd = async (templateId: number) => {
     // 未登录用户提示
     if (!user?.id) {
-      Alert.alert('提示', '请先登录后再添加配方');
+      Alert.alert(t(language, 'common.confirm'), t(language, 'auth.loginRequired'));
       return;
     }
 
@@ -60,7 +68,7 @@ export default function DiscoverScreen() {
       }, 3000);
     } catch (error: any) {
       console.error('添加配方失败:', error);
-      Alert.alert('添加失败', error.message || '请稍后重试');
+      Alert.alert(t(language, 'discover.addFailed'), error.message || t(language, 'common.tryLater'));
     }
   };
 
@@ -82,10 +90,10 @@ export default function DiscoverScreen() {
             {todayLabel}
           </Text>
           <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
-            发现
+            {t(language, 'common.discover')}
           </Text>
           <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-1">
-            从配方库里挑几条最简单的开始
+            {t(language, 'home.startSimple')}
           </Text>
 
           <View className="mt-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder px-4 py-3 flex-row items-center">
@@ -93,7 +101,7 @@ export default function DiscoverScreen() {
             <TextInput
               value={search}
               onChangeText={setSearch}
-              placeholder="搜索锚点或微行为..."
+              placeholder={t(language, 'discover.search')}
               className="flex-1 ml-2 text-[14px] font-semibold text-appText dark:text-appDarkText"
               placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
               returnKeyType="search"
@@ -115,12 +123,12 @@ export default function DiscoverScreen() {
             className="mt-3"
           >
             <View className="flex-row gap-2 pr-3">
-              {categories.map((category) => {
-                const active = selectedCategory === category;
+              {categoryOptions.map((category) => {
+                const active = selectedCategory === category.value;
                 return (
                   <TouchableOpacity
-                    key={category}
-                    onPress={() => handleCategoryChange(category)}
+                    key={category.value}
+                    onPress={() => handleCategoryChange(category.value)}
                     activeOpacity={0.85}
                     className={`px-4 py-2 rounded-full border ${
                       active
@@ -133,7 +141,7 @@ export default function DiscoverScreen() {
                         active ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
                       }`}
                     >
-                      {category}
+                      {category.label}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -145,16 +153,16 @@ export default function DiscoverScreen() {
         <View className="flex-row items-center justify-between mb-3">
           <View>
             <Text className="text-base font-extrabold text-appText dark:text-appDarkText">
-              推荐配方
+              {t(language, 'discover.recommended')}
             </Text>
             <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-0.5">
-              轻轻一点就能加入今天
+              {t(language, 'discover.tapToAdd')}
             </Text>
           </View>
           <View className="px-3 py-1.5 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder">
-            <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
-              {filteredRecipes.length} 条
-            </Text>
+              <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
+                {filteredRecipes.length} {t(language, 'common.items')}
+              </Text>
           </View>
         </View>
 
@@ -163,21 +171,21 @@ export default function DiscoverScreen() {
             <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
               <ActivityIndicator size="large" color="#10B981" />
               <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed mt-3">
-                加载中...
+                {t(language, 'common.loading')}
               </Text>
             </View>
           ) : error ? (
             <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
               <Text className="text-4xl mb-3">⚠️</Text>
               <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed">
-                加载失败，请稍后重试
+                {t(language, 'discover.loadingFailed')}
               </Text>
             </View>
           ) : filteredRecipes.length === 0 ? (
             <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
               <Text className="text-4xl mb-3">🔍</Text>
               <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed">
-                没有找到相关配方
+                {t(language, 'discover.empty')}
               </Text>
             </View>
           ) : (
@@ -210,7 +218,7 @@ export default function DiscoverScreen() {
                       {alreadyAdded && (
                         <View className="px-2.5 py-1 rounded-full bg-primary/10 dark:bg-primary/15 border border-primary/25 dark:border-primary/30">
                           <Text className="text-[11px] font-bold text-primary">
-                            已添加
+                            {t(language, 'discover.added')}
                           </Text>
                         </View>
                       )}

@@ -1,6 +1,8 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MicroBehavior } from '../../types';
+import { useAuthStore } from '../../stores';
+import { formatText, t } from '../../utils/i18n';
 
 interface HabitCardProps {
   behavior: MicroBehavior;
@@ -10,6 +12,7 @@ interface HabitCardProps {
 }
 
 export function HabitCard({ behavior, isChecked, onCheck, onPress }: HabitCardProps) {
+  const language = useAuthStore((s) => s.language);
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -42,14 +45,14 @@ export function HabitCard({ behavior, isChecked, onCheck, onPress }: HabitCardPr
         <View className="flex-row items-center gap-2 mt-2">
           <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
             <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
-              当 {behavior.anchor} 后
+              {formatText(language, 'detail.after', { anchor: behavior.anchor })}
             </Text>
           </View>
           {behavior.reminderEnabled && (
             <View className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 dark:bg-primary/15 border border-primary/15 dark:border-primary/25">
               <Ionicons name="notifications" size={12} color="#10B981" />
               <Text className="text-[11px] font-bold text-primary">
-                {behavior.reminderTime || '提醒'}
+                {behavior.reminderTime || t(language, 'profile.notifications')}
               </Text>
             </View>
           )}

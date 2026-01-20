@@ -2,6 +2,7 @@ import { View, Text, Modal, Animated } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../stores';
+import { t } from '../../utils/i18n';
 
 interface CelebrationModalProps {
   visible: boolean;
@@ -11,6 +12,7 @@ interface CelebrationModalProps {
 
 export function CelebrationModal({ visible, celebration, onClose }: CelebrationModalProps) {
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
+  const language = useAuthStore((s) => s.language);
   const cardScale = useRef(new Animated.Value(0.96)).current;
   const iconScale = useRef(new Animated.Value(0.92)).current;
   const iconRotate = useRef(new Animated.Value(0)).current;
@@ -98,11 +100,11 @@ export function CelebrationModal({ visible, celebration, onClose }: CelebrationM
               </Animated.View>
 
               <Text className="text-[20px] font-extrabold text-appText dark:text-appDarkText mt-4">
-                太棒了
+                {t(language, 'home.energyTitle')}
               </Text>
               <View className="mt-2 px-3 py-1.5 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
                 <Text className="text-[12px] font-extrabold text-primary">
-                  +1 行动值
+                  +10 {t(language, 'common.points')}
                 </Text>
               </View>
             </View>
@@ -113,7 +115,7 @@ export function CelebrationModal({ visible, celebration, onClose }: CelebrationM
                   <Text className="text-[18px]">✨</Text>
                 </View>
                 <Text className="text-[13px] font-extrabold text-appText dark:text-appDarkText">
-                  记得庆祝
+                  {t(language, 'stats.celebration')}
                 </Text>
               </View>
               <Text className="text-[14px] font-semibold text-appMuted dark:text-appDarkMuted mt-3">
@@ -122,7 +124,7 @@ export function CelebrationModal({ visible, celebration, onClose }: CelebrationM
             </View>
 
             <Text className="text-[12px] font-semibold text-center text-appMuted dark:text-appDarkMuted mt-4">
-              每一次小小的行动，都在让你变得更好
+              {t(language, 'home.energyLine')}
             </Text>
           </View>
         </Animated.View>

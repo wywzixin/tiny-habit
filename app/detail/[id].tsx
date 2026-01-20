@@ -8,6 +8,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/client';
 import { queryClient, queryKeys } from '../../services/api/queryClient';
 import * as Haptics from 'expo-haptics';
+import { formatText, getLocale, t } from '../../utils/i18n';
 
 export default function DetailScreen() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function DetailScreen() {
   const { microBehaviors, checkIns, deleteMicroBehavior } = useHabitStore();
   const user = useAuthStore((s) => s.user);
   const isDarkMode = useAuthStore((state) => state.isDarkMode);
+  const language = useAuthStore((s) => s.language);
 
   // 已登录用户：从后端获取微行为详情
   const { data: cloudBehavior, isLoading } = useQuery({
@@ -48,15 +50,15 @@ export default function DetailScreen() {
     },
     onError: (error: any) => {
       console.error('删除微行为失败:', error);
-      Alert.alert('删除失败', error.message || '请稍后重试');
+      Alert.alert(t(language, 'detail.deleteFailed'), error.message || t(language, 'common.tryLater'));
     },
   });
 
   const handleDelete = () => {
-    Alert.alert('删除配方', '确定删除这个习惯配方吗？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t(language, 'detail.delete'), t(language, 'detail.deleteConfirm'), [
+      { text: t(language, 'common.cancel'), style: 'cancel' },
       {
-        text: '删除',
+        text: t(language, 'detail.delete'),
         style: 'destructive',
         onPress: async () => {
           if (user?.id) {
@@ -78,7 +80,7 @@ export default function DetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg items-center justify-center">
         <ActivityIndicator size="large" color="#10B981" />
-        <Text className="text-appMuted dark:text-appDarkMuted mt-3">加载中...</Text>
+        <Text className="text-appMuted dark:text-appDarkMuted mt-3">{t(language, 'common.loading')}</Text>
       </SafeAreaView>
     );
   }
@@ -87,19 +89,19 @@ export default function DetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg items-center justify-center">
         <Text className="text-4xl mb-3">🔍</Text>
-        <Text className="text-appMuted dark:text-appDarkMuted">微行为不存在</Text>
+        <Text className="text-appMuted dark:text-appDarkMuted">{t(language, 'detail.notFound')}</Text>
         <TouchableOpacity
           onPress={() => router.back()}
           activeOpacity={0.85}
           className="mt-5 bg-appText dark:bg-appDarkText px-4 py-3 rounded-2xl"
         >
-          <Text className="text-white dark:text-appText font-bold">返回</Text>
+          <Text className="text-white dark:text-appText font-bold">{t(language, 'common.back')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
-  const todayLabel = new Date().toLocaleDateString('zh-CN', {
+  const todayLabel = new Date().toLocaleDateString(getLocale(language), {
     month: 'long',
     day: 'numeric',
     weekday: 'short',
@@ -119,7 +121,7 @@ export default function DetailScreen() {
                 {todayLabel}
               </Text>
               <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
-                习惯详情
+                {t(language, 'detail.title')}
               </Text>
             </View>
 
@@ -152,10 +154,12 @@ export default function DetailScreen() {
                 <View className="flex-1 pr-3">
                   <View className="flex-row items-center gap-2">
                     <View className="px-2.5 py-1 rounded-full bg-white/15">
-                      <Text className="text-white text-[11px] font-bold">我的配方</Text>
+                      <Text className="text-white text-[11px] font-bold">{t(language, 'detail.recipe')}</Text>
                     </View>
                     <View className="px-2.5 py-1 rounded-full bg-white/15">
-                      <Text className="text-white text-[11px] font-bold">当 {behavior.anchor} 后</Text>
+                      <Text className="text-white text-[11px] font-bold">
+                        {formatText(language, 'detail.after', { anchor: behavior.anchor })}
+                      </Text>
                     </View>
                   </View>
                   <Text className="text-white text-[20px] font-extrabold mt-3" numberOfLines={2}>
@@ -172,13 +176,13 @@ export default function DetailScreen() {
 
         <View className="flex-row gap-3 mb-6">
           <View className="flex-1 bg-appCard dark:bg-appDarkCard p-5 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
-            <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mb-1">打卡天数</Text>
+            <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mb-1">{t(language, 'detail.days')}</Text>
             <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">
               {behaviorCheckIns.length}
             </Text>
           </View>
           <View className="flex-1 bg-appCard dark:bg-appDarkCard p-5 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
-            <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mb-1">行动值</Text>
+            <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mb-1">{t(language, 'detail.points')}</Text>
             <Text className="text-2xl font-extrabold text-primary">
               {behaviorCheckIns.length}
             </Text>
@@ -187,7 +191,7 @@ export default function DetailScreen() {
 
         <View className="mb-5">
           <Text className="text-base font-extrabold text-appText dark:text-appDarkText mb-3">
-            配方
+            {t(language, 'detail.recipe')}
           </Text>
           <View className="bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder gap-3">
             <View className="flex-row items-center gap-3">
@@ -195,7 +199,7 @@ export default function DetailScreen() {
                 <Text className="text-[20px]">⏰</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">锚点</Text>
+                <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">{t(language, 'detail.anchor')}</Text>
                 <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText">
                   {behavior.anchor}
                 </Text>
@@ -209,7 +213,7 @@ export default function DetailScreen() {
                 <Text className="text-[20px]">⚡</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">微行为</Text>
+                <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">{t(language, 'detail.behavior')}</Text>
                 <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText">
                   {behavior.behavior}
                 </Text>
@@ -223,7 +227,7 @@ export default function DetailScreen() {
                 <Text className="text-[20px]">🎉</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">庆祝</Text>
+                <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">{t(language, 'detail.celebration')}</Text>
                 <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText">
                   {behavior.celebration}
                 </Text>
@@ -238,7 +242,7 @@ export default function DetailScreen() {
           className="py-4 rounded-[22px] border border-red-200/70 dark:border-red-500/30 bg-red-50/60 dark:bg-red-500/10 items-center"
         >
           <Text className="text-[14px] font-extrabold text-red-500">
-            删除此配方
+            {t(language, 'detail.delete')}
           </Text>
         </TouchableOpacity>
       </ScrollView>

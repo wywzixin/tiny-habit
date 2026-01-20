@@ -979,14 +979,15 @@ habits.map(habit => (
 
 **功能说明：**
 - 用户完成微行为后打卡
-- 每次打卡获得 1 个行动值
+- 每次打卡获得 10 个行动值
 - 同一微行为每天只能打卡一次
+- 支持从配方库添加的微行为（无关联习惯，habitId 为 null）
 
 **请求参数：**
 ```json
 {
   "microBehaviorId": 1,
-  "habitId": 1
+  "habitId": 1  // 可选，从配方库添加的微行为可以为 null
 }
 ```
 
@@ -994,7 +995,25 @@ habits.map(habit => (
 | 字段 | 类型 | 必填 | 说明 |
 |-----|------|------|------|
 | microBehaviorId | Long | 是 | 微行为ID |
-| habitId | Long | 是 | 习惯ID |
+| habitId | Long | 否 | 习惯ID（从配方库添加的微行为可以为 null） |
+
+**使用场景：**
+
+1. **有关联习惯的微行为**（通过创建配方页面添加）
+   ```json
+   {
+     "microBehaviorId": 1,
+     "habitId": 1
+   }
+   ```
+
+2. **从配方库添加的微行为**（无关联习惯）
+   ```json
+   {
+     "microBehaviorId": 2,
+     "habitId": null
+   }
+   ```
 
 **成功响应：**
 ```json
@@ -1004,10 +1023,10 @@ habits.map(habit => (
   "data": {
     "id": 1,
     "microBehaviorId": 1,
-    "habitId": 1,
+    "habitId": 1,  // 如果是从配方库添加的，这里为 null
     "userId": 1,
-    "checkedAt": "2026-01-17T08:30:00",
-    "pointsEarned": 1
+    "checkedAt": "2026-01-20T08:30:00",
+    "pointsEarned": 10
   }
 }
 ```
@@ -1021,7 +1040,108 @@ habits.map(habit => (
 }
 ```
 
-### 4.2 获取用户打卡记录
+### 4.2 取消打卡
+
+`POST /api/checkin/cancel`
+
+**功能说明：**
+- 取消今天的打卡记录
+- 扣除对应获得的行动值
+- 只能取消今天的打卡，不能取消历史打卡
+- 支持从配方库添加的微行为（无关联习惯，habitId 为 null）
+
+**请求头：**
+```
+Authorization: Bearer <token>
+```
+
+**请求参数：**
+```json
+{
+  "microBehaviorId": 1,
+  "habitId": 1  // 可选，从配方库添加的微行为可以为 null
+}
+```
+
+**字段说明：**
+| 字段 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| microBehaviorId | Long | 是 | 微行为ID |
+| habitId | Long | 否 | 习惯ID（从配方库添加的微行为可以为 null） |
+
+**使用场景：**
+
+1. **有关联习惯的微行为**（通过创建配方页面添加）
+   ```json
+   {
+     "microBehaviorId": 1,
+     "habitId": 1
+   }
+   ```
+
+2. **从配方库添加的微行为**（无关联习惯）
+   ```json
+   {
+     "microBehaviorId": 2,
+     "habitId": null
+   }
+   ```
+
+**成功响应：**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "pointsDeducted": 10
+  }
+}
+```
+
+**错误响应：**
+
+**今天还没有打卡：**
+```json
+{
+  "code": 500,
+  "message": "今天还没有打卡记录",
+  "data": null
+}
+```
+
+**前端使用建议：**
+```javascript
+// 取消打卡前弹窗确认
+const cancelCheckIn = async (microBehaviorId, habitId) => {
+  const confirmed = await showConfirmDialog({
+    title: '确认取消打卡',
+    message: '取消后将扣除 10 个行动值，确定要取消吗？',
+    confirmText: '确定',
+    cancelText: '取消'
+  });
+  
+  if (confirmed) {
+    const response = await fetch('/api/checkin/cancel', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        microBehaviorId,
+        habitId  // 如果没有关联习惯，可以传 null 或不传
+      })
+    });
+    
+    const result = await response.json();
+    if (result.code === 200) {
+      showToast(`已取消打卡，扣除 ${result.data.pointsDeducted} 个行动值`);
+    }
+  }
+};
+```
+
+### 4.3 获取用户打卡记录
 
 `GET /api/checkin/user/{userId}`
 
@@ -1045,8 +1165,8 @@ habits.map(habit => (
       "microBehaviorId": 1,
       "habitId": 1,
       "userId": 1,
-      "checkedAt": "2026-01-17T08:30:00",
-      "pointsEarned": 1
+      "checkedAt": "2026-01-20T08:30:00",
+      "pointsEarned": 10
     },
     {
       "id": 2,

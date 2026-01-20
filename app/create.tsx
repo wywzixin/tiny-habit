@@ -12,12 +12,12 @@ import { BottomSheet } from '../components/ui/BottomSheet';
 import { useCreateRecipe, useHabitLibrary, useDeleteHabit, useUpdateRecipe } from '../services/api/hooks';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../services/api/client';
+import { getLocale, t } from '../utils/i18n';
 
 // 习惯库分类
 const habitCategories = ['全部', '新建', '推荐', '健康', '学习', '生活', '心理', '社交'];
 
-// 本地系统习惯库（未登录用户使用）
-const localSystemHabits = [
+const localSystemHabitsZh = [
   {
     id: 'system-1',
     name: '多喝水',
@@ -110,7 +110,100 @@ const localSystemHabits = [
   },
 ];
 
-const aiRecommendations = {
+const localSystemHabitsEn = [
+  {
+    id: 'system-1',
+    name: 'Drink water',
+    icon: '💧',
+    category: '推荐',
+    source: 'system' as const,
+    description: '8 cups a day to stay hydrated',
+    popularity: 100,
+  },
+  {
+    id: 'system-2',
+    name: 'Wake up early',
+    icon: '🌅',
+    category: '推荐',
+    source: 'system' as const,
+    description: 'Early to bed, early to rise',
+    popularity: 95,
+  },
+  {
+    id: 'system-3',
+    name: 'Exercise',
+    icon: '💪',
+    category: '健康',
+    source: 'system' as const,
+    description: 'Move for 30 minutes a day',
+    popularity: 90,
+  },
+  {
+    id: 'system-4',
+    name: 'Read',
+    icon: '📚',
+    category: '学习',
+    source: 'system' as const,
+    description: 'Read for 15 minutes daily',
+    popularity: 85,
+  },
+  {
+    id: 'system-5',
+    name: 'Meditate',
+    icon: '🧘',
+    category: '心理',
+    source: 'system' as const,
+    description: '10 minutes of mindfulness',
+    popularity: 80,
+  },
+  {
+    id: 'system-6',
+    name: 'Tidy up',
+    icon: '🧹',
+    category: '生活',
+    source: 'system' as const,
+    description: 'Keep your space clean',
+    popularity: 75,
+  },
+  {
+    id: 'system-7',
+    name: 'Reach out',
+    icon: '👋',
+    category: '社交',
+    source: 'system' as const,
+    description: 'Stay socially connected',
+    popularity: 70,
+  },
+  {
+    id: 'system-8',
+    name: 'Eat healthy',
+    icon: '🥗',
+    category: '健康',
+    source: 'system' as const,
+    description: 'More veggies and fruits',
+    popularity: 88,
+  },
+  {
+    id: 'system-9',
+    name: 'Learn a skill',
+    icon: '🎯',
+    category: '学习',
+    source: 'system' as const,
+    description: 'Learn something new daily',
+    popularity: 82,
+  },
+  {
+    id: 'system-10',
+    name: 'Gratitude journal',
+    icon: '📝',
+    category: '心理',
+    source: 'system' as const,
+    description: 'Write down what you’re grateful for',
+    popularity: 78,
+  },
+];
+
+const aiRecommendationsZh = {
   behaviors: [
     { text: '喝一口水', difficulty: 'easy', icon: '💧' },
     { text: '喝半杯水', difficulty: 'easy', icon: '🥤' },
@@ -120,6 +213,19 @@ const aiRecommendations = {
     { text: '起床后', icon: '🛏️' },
     { text: '到公司后', icon: '💼' },
     { text: '吃完饭后', icon: '🍚' },
+  ],
+};
+
+const aiRecommendationsEn = {
+  behaviors: [
+    { text: 'Sip water', difficulty: 'easy', icon: '💧' },
+    { text: 'Drink half a cup', difficulty: 'easy', icon: '🥤' },
+    { text: 'Drink a full cup', difficulty: 'medium', icon: '🫗' },
+  ],
+  anchors: [
+    { text: 'After waking up', icon: '🛏️' },
+    { text: 'After arriving at work', icon: '💼' },
+    { text: 'After a meal', icon: '🍚' },
   ],
 };
 
@@ -138,6 +244,9 @@ export default function CreateScreen() {
   } = useHabitStore();
   const user = useAuthStore((s) => s.user);
   const isDarkMode = useAuthStore((state) => state.isDarkMode);
+  const language = useAuthStore((state) => state.language);
+  const localSystemHabits = language === 'en' ? localSystemHabitsEn : localSystemHabitsZh;
+  const aiRecommendations = language === 'en' ? aiRecommendationsEn : aiRecommendationsZh;
   
   // 创建配方的 mutation
   const createRecipeMutation = useCreateRecipe();
@@ -212,7 +321,7 @@ export default function CreateScreen() {
   const [reminderTime, setReminderTime] = useState(new Date(2026, 0, 1, 8, 0));
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const todayLabel = new Date().toLocaleDateString('zh-CN', {
+  const todayLabel = new Date().toLocaleDateString(getLocale(language), {
     month: 'long',
     day: 'numeric',
     weekday: 'short',
@@ -343,10 +452,10 @@ export default function CreateScreen() {
   };
 
 const handleDeleteUserHabit = async (id: number | string, name: string) => {
-  Alert.alert('删除习惯', `确定删除"${name}"吗？\n\n删除后该习惯下的所有微行为也会被删除。`, [
-    { text: '取消', style: 'cancel' },
+  Alert.alert(t(language, 'create.deleteHabit'), `${t(language, 'create.deleteHabitConfirm')} "${name}"？\n\n${t(language, 'create.deleteHabitHint')}`, [
+    { text: t(language, 'common.cancel'), style: 'cancel' },
     {
-      text: '删除',
+      text: t(language, 'detail.delete'),
       style: 'destructive',
       onPress: async () => {
         try {
@@ -363,14 +472,13 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
         } catch (error: any) {
           console.error('删除习惯失败:', error);
           
-          let errorMessage = '删除失败，请稍后重试';
+          let errorMessage = t(language, 'detail.deleteFailed');
           if (error.code === 403) {
-            errorMessage = '系统推荐的习惯不能删除';
+            errorMessage = t(language, 'create.deleteSystemHabitBlocked');
           } else if (error.code === 404) {
-            errorMessage = '习惯不存在或无权操作';
+            errorMessage = t(language, 'create.habitNotFound');
           }
-          
-          Alert.alert('删除失败', errorMessage);
+          Alert.alert(t(language, 'detail.deleteFailed'), errorMessage);
         }
       },
     },
@@ -435,14 +543,14 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
       console.error('创建配方失败 - 详细信息:', error);
       
       // 转换为用户友好的错误信息
-      let friendlyMessage = '创建失败，请稍后重试';
+      let friendlyMessage = t(language, 'create.createFailed');
       if (error.code === 0) {
-        friendlyMessage = '网络连接失败，请检查网络';
+        friendlyMessage = t(language, 'create.networkError');
       } else if (error.message?.includes('数据库') || error.message?.includes('SQL')) {
-        friendlyMessage = '服务器错误，请稍后重试';
+        friendlyMessage = t(language, 'create.serverError');
       }
       
-      Alert.alert('创建失败', friendlyMessage);
+      Alert.alert(t(language, 'create.createFailed'), friendlyMessage);
     }
   };
 
@@ -492,7 +600,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
       router.back();
     } catch (error: any) {
       console.error('更新配方失败:', error);
-      Alert.alert('更新失败', error.message || '请稍后重试');
+      Alert.alert(t(language, 'create.updateFailed'), error.message || t(language, 'common.tryLater'));
     }
   };
 
@@ -508,7 +616,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
             activeOpacity={0.85}
             className="px-3 py-2 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder"
           >
-            <Text className="text-appMuted dark:text-appDarkMuted text-[12px] font-bold">取消</Text>
+            <Text className="text-appMuted dark:text-appDarkMuted text-[12px] font-bold">{t(language, 'common.cancel')}</Text>
           </TouchableOpacity>
 
           <View className="items-center">
@@ -516,7 +624,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
               {todayLabel}
             </Text>
             <Text className="text-base font-extrabold text-appText dark:text-appDarkText mt-0.5">
-              {editingId ? '编辑配方' : '新建配方'}
+              {editingId ? t(language, 'create.editTitle') : t(language, 'create.newTitle')}
             </Text>
           </View>
 
@@ -532,7 +640,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
               <Text className={`text-[12px] font-extrabold ${
                 canCreate ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
               }`}>
-                保存
+                {t(language, 'common.save')}
               </Text>
             </TouchableOpacity>
           ) : (
@@ -550,10 +658,10 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
         {/* Goal Input */}
         <View className="mb-8">
           <Text className="text-lg font-extrabold text-appText dark:text-appDarkText mb-1">
-            🎯 你想养成什么习惯？
+            {t(language, 'create.goalTitle')}
           </Text>
           <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">
-            输入目标后，AI 会推荐微行为和触发时机
+            {t(language, 'create.goalHint')}
           </Text>
           <View className="bg-appCard dark:bg-appDarkCard px-4 py-3 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
             <View className="flex-row items-center">
@@ -561,7 +669,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
             <TextInput
               value={goal}
               onChangeText={setGoal}
-              placeholder="例如：多喝水、运动、早起..."
+              placeholder={t(language, 'create.goalPlaceholder')}
               className="flex-1 ml-2 text-[14px] font-semibold text-appText dark:text-appDarkText"
               placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
             />
@@ -571,7 +679,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
               className="px-3 py-2 bg-appText dark:bg-appDarkText rounded-2xl flex-row items-center"
             >
               <Ionicons name="book-outline" size={14} color={isDarkMode ? '#0c0a09' : 'white'} />
-              <Text className="text-xs font-bold text-white dark:text-appText ml-1">习惯库</Text>
+              <Text className="text-xs font-bold text-white dark:text-appText ml-1">{t(language, 'create.library')}</Text>
             </TouchableOpacity>
             </View>
           </View>
@@ -580,17 +688,17 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
         {/* Behavior Selection */}
         <View className="mb-8">
           <View className="flex-row items-center gap-2 mb-1">
-            <Text className="text-lg font-extrabold text-appText dark:text-appDarkText">⚡ 选择微行为</Text>
+            <Text className="text-lg font-extrabold text-appText dark:text-appDarkText">{t(language, 'create.behaviorTitle')}</Text>
             <LinearGradient
               colors={['#8B5CF6', '#EC4899']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 }}
             >
-              <Text className="text-[10px] font-bold text-white">AI 推荐</Text>
+              <Text className="text-[10px] font-bold text-white">{t(language, 'create.aiRecommend')}</Text>
             </LinearGradient>
           </View>
-          <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">越小越容易坚持</Text>
+          <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">{t(language, 'create.behaviorHint')}</Text>
           <View className="gap-2 mb-3">
             {aiRecommendations.behaviors.map((item) => (
               <TouchableOpacity
@@ -609,7 +717,11 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                 <View className="flex-1">
                   <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText">{item.text}</Text>
                   <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-1">
-                    {item.difficulty === 'easy' ? '简单 · 30 秒内完成' : item.difficulty === 'medium' ? '适中 · 1 分钟内完成' : '挑战 · 2 分钟内完成'}
+                    {item.difficulty === 'easy'
+                      ? t(language, 'create.levelEasy')
+                      : item.difficulty === 'medium'
+                        ? t(language, 'create.levelMedium')
+                        : t(language, 'create.levelHard')}
                   </Text>
                 </View>
                 {behavior === item.text && (
@@ -623,7 +735,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
           <TextInput
             value={behavior}
             onChangeText={setBehavior}
-            placeholder="或自己输入微行为..."
+            placeholder={t(language, 'create.behaviorPlaceholder')}
             className="bg-appCard dark:bg-appDarkCard px-4 py-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder text-[14px] font-semibold text-appText dark:text-appDarkText"
             placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
           />
@@ -632,17 +744,17 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
         {/* Anchor Selection */}
         <View className="mb-8">
           <View className="flex-row items-center gap-2 mb-1">
-            <Text className="text-lg font-extrabold text-appText dark:text-appDarkText">⏰ 什么时候做？</Text>
+            <Text className="text-lg font-extrabold text-appText dark:text-appDarkText">{t(language, 'create.anchorTitle')}</Text>
             <LinearGradient
               colors={['#8B5CF6', '#EC4899']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 }}
             >
-              <Text className="text-[10px] font-bold text-white">AI 推荐</Text>
+              <Text className="text-[10px] font-bold text-white">{t(language, 'create.aiRecommend')}</Text>
             </LinearGradient>
           </View>
-          <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">选择一个每天必做的事作为触发点</Text>
+          <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">{t(language, 'create.anchorHint')}</Text>
           <View className="gap-2 mb-3">
             {aiRecommendations.anchors.map((item) => (
               <TouchableOpacity
@@ -670,7 +782,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
           <TextInput
             value={anchor}
             onChangeText={setAnchor}
-            placeholder="或自己输入触发时机..."
+            placeholder={t(language, 'create.anchorPlaceholder')}
             className="bg-appCard dark:bg-appDarkCard px-4 py-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder text-[14px] font-semibold text-appText dark:text-appDarkText"
             placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
           />
@@ -678,8 +790,8 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
 
         {/* Celebration */}
         <View className="mb-8">
-          <Text className="text-lg font-extrabold text-appText dark:text-appDarkText mb-1">🎉 完成后庆祝</Text>
-          <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">即时的正向反馈帮助固化习惯</Text>
+          <Text className="text-lg font-extrabold text-appText dark:text-appDarkText mb-1">{t(language, 'create.celebrationTitle')}</Text>
+          <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">{t(language, 'create.celebrationHint')}</Text>
           <View className="flex-row flex-wrap gap-2">
             {celebrations.map((item) => (
               <TouchableOpacity
@@ -701,8 +813,8 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
 
         {/* Frequency */}
         <View className="mb-8">
-          <Text className="text-lg font-extrabold text-appText dark:text-appDarkText mb-1">📅 打卡频率</Text>
-          <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">选择每周需要打卡的日子</Text>
+          <Text className="text-lg font-extrabold text-appText dark:text-appDarkText mb-1">{t(language, 'create.frequencyTitle')}</Text>
+          <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">{t(language, 'create.frequencyHint')}</Text>
           <View className="flex-row justify-between mb-1">
             {weekDays.map((day, index) => {
               const backendDay = index + 1; // UI 索引 0-6 对应后端 1-7
@@ -730,14 +842,14 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
 
         {/* Reminder */}
         <View className="mb-8">
-          <Text className="text-lg font-extrabold text-appText dark:text-appDarkText mb-1">🔔 提醒设置</Text>
-          <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">开启提醒帮助你记住打卡</Text>
+          <Text className="text-lg font-extrabold text-appText dark:text-appDarkText mb-1">{t(language, 'create.reminderTitle')}</Text>
+          <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">{t(language, 'create.reminderHint')}</Text>
           <View className="bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
             <View className="flex-row items-center justify-between">
               <View>
-                <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">开启提醒</Text>
+                <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'create.reminderSwitch')}</Text>
                 <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-1">
-                  仅记录时间，通知推送待接入
+                  {t(language, 'create.reminderNote')}
                 </Text>
               </View>
               <Switch
@@ -749,7 +861,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
             </View>
             {reminderEnabled && (
               <View className="mt-4 pt-4 border-t border-appBorder dark:border-appDarkBorder">
-                <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mb-2">提醒时间</Text>
+                <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mb-2">{t(language, 'create.reminderTime')}</Text>
                 <TouchableOpacity
                   onPress={() => setShowTimePicker(true)}
                   activeOpacity={0.85}
@@ -773,16 +885,21 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
       <View className="absolute bottom-0 left-0 right-0 bg-appBg dark:bg-appDarkBg border-t border-appBorder dark:border-appDarkBorder px-5 pt-3 pb-8">
         <View className="bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder mb-3">
           <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-[11px] font-extrabold text-appMuted dark:text-appDarkMuted">我的配方预览</Text>
+            <Text className="text-[11px] font-extrabold text-appMuted dark:text-appDarkMuted">{t(language, 'create.previewTitle')}</Text>
             <View className="flex-row items-center gap-1.5">
               <Ionicons name="sparkles" size={14} color="#10B981" />
               <Text className="text-[11px] font-extrabold text-primary">B = MAP</Text>
             </View>
           </View>
           <Text className="text-[14px] font-semibold text-appText dark:text-appDarkText leading-relaxed">
-            当 <Text className={anchor ? 'text-primary font-extrabold' : 'text-appMuted dark:text-appDarkMuted'}>{anchor || '___'}</Text> 后，
-            我会 <Text className={behavior ? 'text-primary font-extrabold' : 'text-appMuted dark:text-appDarkMuted'}>{behavior || '___'}</Text>，
-            然后 <Text className={celebration ? 'text-primary font-extrabold' : 'text-appMuted dark:text-appDarkMuted'}>{celebration || '___'}</Text>
+            {t(language, 'create.previewWhen')}{' '}
+            <Text className={anchor ? 'text-primary font-extrabold' : 'text-appMuted dark:text-appDarkMuted'}>{anchor || '___'}</Text>{' '}
+            {t(language, 'create.previewAfter')}{' '}
+            {t(language, 'create.previewIWill')}{' '}
+            <Text className={behavior ? 'text-primary font-extrabold' : 'text-appMuted dark:text-appDarkMuted'}>{behavior || '___'}</Text>
+            {t(language, 'create.previewSeparator')}{' '}
+            {t(language, 'create.previewThen')}{' '}
+            <Text className={celebration ? 'text-primary font-extrabold' : 'text-appMuted dark:text-appDarkMuted'}>{celebration || '___'}</Text>
           </Text>
         </View>
         <TouchableOpacity
@@ -794,14 +911,14 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
           }`}
         >
           <Text className={`font-extrabold text-base ${canCreate ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'}`}>
-            {editingId ? '保存修改' : '确认创建'}
+            {editingId ? t(language, 'create.saveChanges') : t(language, 'create.confirmCreate')}
           </Text>
         </TouchableOpacity>
       </View>
 
       <BottomSheet
         visible={showLibrary}
-        title="选择一个习惯目标"
+        title={t(language, 'create.chooseHabitTitle')}
         onClose={() => { 
           setShowLibrary(false); 
           setLibrarySearch(''); 
@@ -811,7 +928,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
       >
         {isLoadingLibrary && user?.id ? (
           <View className="flex-1 items-center justify-center">
-            <Text className="text-appMuted dark:text-appDarkMuted">加载中...</Text>
+            <Text className="text-appMuted dark:text-appDarkMuted">{t(language, 'common.loading')}</Text>
           </View>
         ) : (
         <>
@@ -823,7 +940,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
               <TextInput
                 value={librarySearch}
                 onChangeText={setLibrarySearch}
-                placeholder="搜索习惯名称或描述..."
+                placeholder={t(language, 'create.searchHabitPlaceholder')}
                 className="flex-1 ml-2 text-[14px] font-semibold text-appText dark:text-appDarkText"
                 placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
                 returnKeyType="search"
@@ -856,7 +973,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                 <Text className={`text-[14px] font-bold ${
                   isEditMode ? 'text-white' : 'text-appText dark:text-appDarkText'
                 }`}>
-                  {isEditMode ? '完成' : '编辑'}
+                  {isEditMode ? t(language, 'common.done') : t(language, 'common.edit')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -882,7 +999,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                         active ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
                       }`}
                     >
-                      {cat}
+                      {t(language, `create.category.${cat}`)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -892,11 +1009,15 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
 
           <View className="flex-row items-center justify-between mt-4">
             <Text className="text-[12px] font-extrabold text-appText dark:text-appDarkText">
-              {libraryCategory === '新建' ? '我创建的' : libraryCategory === '全部' ? '全部习惯' : '系统推荐'}
+              {libraryCategory === '新建'
+                ? t(language, 'create.libraryMine')
+                : libraryCategory === '全部'
+                  ? t(language, 'create.libraryAll')
+                  : t(language, 'create.libraryRecommended')}
             </Text>
             <View className="px-3 py-1.5 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder">
               <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
-                {processedHabits.length} 条
+                {processedHabits.length} {t(language, 'common.items')}
               </Text>
             </View>
           </View>
@@ -913,10 +1034,10 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
               <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] p-8 items-center">
                 <Text className="text-4xl mb-3">🔎</Text>
                 <Text className="text-sm font-extrabold text-appText dark:text-appDarkText">
-                  没找到相关习惯
+                  {t(language, 'create.noHabitFound')}
                 </Text>
                 <Text className="text-xs font-semibold text-appMuted dark:text-appDarkMuted mt-2 text-center leading-relaxed">
-                  换个关键词试试，或选择其他分类
+                  {t(language, 'create.noHabitHint')}
                 </Text>
                 <TouchableOpacity
                   onPress={() => setLibrarySearch('')}
@@ -924,7 +1045,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                   className="mt-5 px-4 py-3 rounded-2xl bg-appText dark:bg-appDarkText"
                 >
                   <Text className="text-white dark:text-appText font-extrabold">
-                    清空搜索
+                    {t(language, 'common.clear')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -963,12 +1084,12 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                         </Text>
                         <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
                           <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
-                            {habit.category}
+                            {t(language, `create.category.${habit.category}`)}
                           </Text>
                         </View>
                       </View>
                       <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-2">
-                        {habit.description || '暂无描述'}
+                        {habit.description || t(language, 'common.noDescription')}
                       </Text>
                     </View>
                     
@@ -1015,10 +1136,10 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
 
       <BottomSheet
         visible={showTimePicker}
-        title="选择提醒时间"
+        title={t(language, 'create.reminderTime')}
         onClose={() => setShowTimePicker(false)}
-        leftLabel="取消"
-        rightLabel="确定"
+        leftLabel={t(language, 'common.cancel')}
+        rightLabel={t(language, 'common.confirm')}
         height={300}
       >
         <View className="items-center py-2">
@@ -1027,7 +1148,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
             mode="time"
             display="spinner"
             onChange={onTimeChange}
-            locale="zh-CN"
+            locale={getLocale(language)}
             style={{ height: 200, width: '100%' }}
             themeVariant={isDarkMode ? 'dark' : 'light'}
           />

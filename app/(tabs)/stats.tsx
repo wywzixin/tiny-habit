@@ -5,6 +5,7 @@ import { useAuthStore, useHabitStore } from '../../stores';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useUserStats, useTodayCheckIns as useTodayStatsCheckIns } from '../../services/api/hooks/useStats';
 import { useMemo } from 'react';
+import { getLocale, t } from '../../utils/i18n';
 
 export default function StatsScreen() {
   const user = useAuthStore((s) => s.user);
@@ -105,7 +106,7 @@ export default function StatsScreen() {
       const habit = microBehaviors.find((h) => h.id === checkIn.microBehaviorId);
       return {
         icon: habit?.icon || '✨',
-        behavior: habit?.behavior || '已完成',
+        behavior: habit?.behavior || t(language, 'home.completed'),
         celebration: habit?.celebration || '',
         checkedAt: checkIn.checkedAt,
         pointsEarned: checkIn.pointsEarned,
@@ -122,7 +123,8 @@ export default function StatsScreen() {
     console.log('第一条的 icon:', todayMomentsData[0]?.icon);
   }
 
-  const todayLabel = new Date().toLocaleDateString('zh-CN', {
+  const language = useAuthStore((s) => s.language);
+  const todayLabel = new Date().toLocaleDateString(getLocale(language), {
     month: 'long',
     day: 'numeric',
     weekday: 'short',
@@ -135,7 +137,7 @@ export default function StatsScreen() {
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#10B981" />
           <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mt-4">
-            加载统计数据...
+            {t(language, 'stats.loading')}
           </Text>
         </View>
       </SafeAreaView>
@@ -154,7 +156,7 @@ export default function StatsScreen() {
             {todayLabel}
           </Text>
           <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
-            统计
+            {t(language, 'common.stats')}
           </Text>
 
           <View className="mt-4">
@@ -166,7 +168,7 @@ export default function StatsScreen() {
             >
               <View className="flex-row items-center justify-between">
                 <View>
-                  <Text className="text-white/90 text-[11px] font-bold">累计行动值</Text>
+                  <Text className="text-white/90 text-[11px] font-bold">{t(language, 'stats.totalPoints')}</Text>
                   <View className="flex-row items-end gap-2 mt-1">
                     <Text className="text-white text-4xl font-extrabold">
                       {statsData.totalPoints}
@@ -188,13 +190,13 @@ export default function StatsScreen() {
 
         <View className="flex-row gap-3 mb-5">
           <View className="flex-1 bg-appCard dark:bg-appDarkCard p-5 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
-            <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mb-1">微行为数量</Text>
+            <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mb-1">{t(language, 'stats.habitCount')}</Text>
             <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">
               {statsData.microBehaviorCount}
             </Text>
           </View>
           <View className="flex-1 bg-appCard dark:bg-appDarkCard p-5 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
-            <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mb-1">总打卡</Text>
+            <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mb-1">{t(language, 'stats.checkInCount')}</Text>
             <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">
               {statsData.checkInCount}
             </Text>
@@ -205,7 +207,7 @@ export default function StatsScreen() {
           <View className="flex-row items-center justify-between mb-3">
             <View>
               <Text className="text-base font-extrabold text-appText dark:text-appDarkText">
-                今日发光时刻
+                {t(language, 'stats.moments')}
               </Text>
             </View>
             <View className="flex-row items-center gap-1.5">
@@ -220,10 +222,10 @@ export default function StatsScreen() {
             <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
               <Text className="text-4xl mb-3">🌤️</Text>
               <Text className="text-sm font-extrabold text-appText dark:text-appDarkText">
-                今天还没有打卡记录
+                {t(language, 'stats.noMoments')}
               </Text>
               <Text className="text-xs font-semibold text-appMuted dark:text-appDarkMuted mt-2 text-center leading-relaxed">
-                去首页完成一个微行为，这里会点亮你的进度
+                {t(language, 'stats.noMomentsHint')}
               </Text>
             </View>
           ) : (
@@ -254,9 +256,9 @@ export default function StatsScreen() {
                           </View>
                           <View className="flex-1">
                             <View className="flex-row items-center justify-between">
-                              <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText" numberOfLines={1}>
-                                {moment.behavior || '无行为描述'}
-                              </Text>
+                            <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText" numberOfLines={1}>
+                              {moment.behavior || t(language, 'stats.noBehavior')}
+                            </Text>
                               <View className="flex-row items-center gap-1">
                                 <Ionicons name="time-outline" size={14} color={isDarkMode ? '#a8a29e' : '#78716c'} />
                                 <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted">
@@ -266,7 +268,8 @@ export default function StatsScreen() {
                             </View>
 
                             <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-3">
-                              庆祝：<Text className="text-primary font-extrabold">{moment.celebration || '无庆祝方式'}</Text>
+                              {t(language, 'stats.celebration')}：
+                              <Text className="text-primary font-extrabold">{moment.celebration || t(language, 'stats.noCelebration')}</Text>
                             </Text>
                           </View>
                         </View>
@@ -280,32 +283,29 @@ export default function StatsScreen() {
         </View>
 
         <View className="mb-2">
-          <Text className="text-base font-extrabold text-appText dark:text-appDarkText mb-3">勋章</Text>
+          <Text className="text-base font-extrabold text-appText dark:text-appDarkText mb-3">{t(language, 'stats.badges')}</Text>
           <View className="flex-row gap-3">
-            {/* 萌芽期：1次打卡即可解锁 */}
             <View className={`flex-1 bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center ${statsData.checkInCount >= 1 ? '' : 'opacity-60'}`}>
               <Text className="text-2xl mb-2">🌱</Text>
-              <Text className="text-[12px] font-extrabold text-appText dark:text-appDarkText">萌芽期</Text>
+              <Text className="text-[12px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'stats.badgeSeed')}</Text>
               <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mt-1">
-                {statsData.checkInCount >= 1 ? '已解锁' : '打卡1次解锁'}
+                {statsData.checkInCount >= 1 ? t(language, 'stats.unlocked') : t(language, 'stats.unlockOnce')}
               </Text>
             </View>
             
-            {/* 成长期：10次打卡解锁 */}
             <View className={`flex-1 bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center ${statsData.checkInCount >= 10 ? '' : 'opacity-60'}`}>
               <Text className="text-2xl mb-2">🌳</Text>
-              <Text className="text-[12px] font-extrabold text-appText dark:text-appDarkText">成长期</Text>
+              <Text className="text-[12px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'stats.badgeGrowth')}</Text>
               <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mt-1">
-                {statsData.checkInCount >= 10 ? '已解锁' : `${statsData.checkInCount}/10`}
+                {statsData.checkInCount >= 10 ? t(language, 'stats.unlocked') : `${statsData.checkInCount}/10`}
               </Text>
             </View>
             
-            {/* 大师：50次打卡解锁 */}
             <View className={`flex-1 bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center ${statsData.checkInCount >= 50 ? '' : 'opacity-60'}`}>
               <Text className="text-2xl mb-2">💎</Text>
-              <Text className="text-[12px] font-extrabold text-appText dark:text-appDarkText">大师</Text>
+              <Text className="text-[12px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'stats.badgeMaster')}</Text>
               <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mt-1">
-                {statsData.checkInCount >= 50 ? '已解锁' : `${statsData.checkInCount}/50`}
+                {statsData.checkInCount >= 50 ? t(language, 'stats.unlocked') : `${statsData.checkInCount}/50`}
               </Text>
             </View>
           </View>
