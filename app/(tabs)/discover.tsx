@@ -217,9 +217,7 @@ export default function DiscoverScreen() {
                       </View>
                       {alreadyAdded && (
                         <View className="px-2.5 py-1 rounded-full bg-primary/10 dark:bg-primary/15 border border-primary/25 dark:border-primary/30">
-                          <Text className="text-[11px] font-bold text-primary">
-                            {t(language, 'discover.added')}
-                          </Text>
+                          <Text className="text-[11px] font-bold text-primary">{t(language, 'discover.added')}</Text>
                         </View>
                       )}
                     </View>

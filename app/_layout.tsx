@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from '../stores';
 import { queryClient } from '../services/api';
+import { initializeNotifications } from '../services/notifications';
 
 export default function RootLayout() {
   const isDarkMode = useAuthStore((state) => state.isDarkMode);
@@ -16,6 +17,10 @@ export default function RootLayout() {
   useEffect(() => {
     setColorScheme(isDarkMode ? 'dark' : 'light');
   }, [isDarkMode, setColorScheme]);
+
+  useEffect(() => {
+    initializeNotifications();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

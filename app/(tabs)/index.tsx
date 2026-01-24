@@ -1,16 +1,18 @@
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useHabitStore, useAuthStore } from '../../stores';
+import { themeColors } from '../../stores/authStore';
 import { HabitCard, CelebrationModal, ConfirmModal } from '../../components/habit';
 import { getTodayBackendDay } from '../../utils/dateHelper';
 import { useUserMicroBehaviors, useCheckIn, useTodayCheckIns, useCancelCheckIn } from '../../services/api/hooks';
 import { Alert } from 'react-native';
 import { getLocale, t } from '../../utils/i18n';
+import { scheduleHabitReminders } from '../../services/notifications';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -23,7 +25,16 @@ export default function HomeScreen() {
   const user = useAuthStore((s) => s.user);
   const isDarkMode = useAuthStore((state) => state.isDarkMode);
   const language = useAuthStore((state) => state.language);
+  const notificationsEnabled = useAuthStore((state) => state.notificationsEnabled);
+  const themeColor = useAuthStore((state) => state.themeColor);
   const totalPoints = user?.totalPoints || 0;
+
+  // 获取当前主题色
+  const currentTheme = themeColors[themeColor];
+  // 生成渐变色（主色 + 稍浅的主色）
+  const gradientColors: [string, string] = isDarkMode
+    ? [currentTheme.primary + 'CC', currentTheme.primary]
+    : [currentTheme.primary, currentTheme.primary + 'CC'];
 
   // 已登录：从后端获取用户的微行为列表和今日打卡记录
   const { data: cloudBehaviors = [], isLoading, error } = useUserMicroBehaviors(user?.id);
@@ -39,6 +50,18 @@ export default function HomeScreen() {
   const todayCheckIns = user?.id
     ? cloudCheckIns.map(c => c.microBehaviorId.toString())
     : localCheckIns;
+
+  const reminderKey = useMemo(
+    () =>
+      microBehaviors
+        .map((b) => `${b.id}-${b.reminderEnabled}-${b.reminderTime}-${b.frequency?.join(',')}`)
+        .join('|'),
+    [microBehaviors]
+  );
+
+  useEffect(() => {
+    scheduleHabitReminders(microBehaviors, language, notificationsEnabled);
+  }, [reminderKey, language, microBehaviors, notificationsEnabled]);
 
   const todayBehaviors = microBehaviors.filter((b) => {
     const today = getTodayBackendDay(); // 使用工具函数获取后端格式的今天
@@ -149,7 +172,7 @@ export default function HomeScreen() {
             className="mt-4"
           >
             <LinearGradient
-              colors={isDarkMode ? ['#059669', '#10B981'] : ['#10B981', '#34D399']}
+              colors={gradientColors}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{ borderRadius: 20, padding: 14 }}
@@ -192,7 +215,7 @@ export default function HomeScreen() {
         <View className="gap-3">
           {isLoading ? (
             <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
-              <ActivityIndicator size="large" color="#10B981" />
+              <ActivityIndicator size="large" color={currentTheme.primary} />
               <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed mt-3">
                 {t(language, 'common.loading')}
               </Text>

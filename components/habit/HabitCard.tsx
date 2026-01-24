@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MicroBehavior } from '../../types';
 import { useAuthStore } from '../../stores';
+import { themeColors } from '../../stores/authStore';
 import { formatText, t } from '../../utils/i18n';
 
 interface HabitCardProps {
@@ -13,6 +14,9 @@ interface HabitCardProps {
 
 export function HabitCard({ behavior, isChecked, onCheck, onPress }: HabitCardProps) {
   const language = useAuthStore((s) => s.language);
+  const themeColor = useAuthStore((s) => s.themeColor);
+  const currentTheme = themeColors[themeColor];
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -24,11 +28,12 @@ export function HabitCard({ behavior, isChecked, onCheck, onPress }: HabitCardPr
       }`}
     >
       <View
-        className={`w-12 h-12 rounded-[16px] items-center justify-center mr-3 border ${
+        className="w-12 h-12 rounded-[16px] items-center justify-center mr-3 border"
+        style={
           isChecked
-            ? 'bg-primary/10 border-primary/20 dark:bg-primary/15 dark:border-primary/30'
-            : 'bg-appBg dark:bg-appDarkBg border-appBorder dark:border-appDarkBorder'
-        }`}
+            ? { backgroundColor: currentTheme.primary + '15', borderColor: currentTheme.primary + '30' }
+            : undefined
+        }
       >
         <Text className="text-[22px]">{behavior.icon}</Text>
       </View>
@@ -38,7 +43,6 @@ export function HabitCard({ behavior, isChecked, onCheck, onPress }: HabitCardPr
           className={`text-[15px] font-extrabold ${
             isChecked ? 'text-appMuted dark:text-appDarkMuted line-through' : 'text-appText dark:text-appDarkText'
           }`}
-          numberOfLines={1}
         >
           {behavior.behavior}
         </Text>
@@ -49,9 +53,12 @@ export function HabitCard({ behavior, isChecked, onCheck, onPress }: HabitCardPr
             </Text>
           </View>
           {behavior.reminderEnabled && (
-            <View className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 dark:bg-primary/15 border border-primary/15 dark:border-primary/25">
-              <Ionicons name="notifications" size={12} color="#10B981" />
-              <Text className="text-[11px] font-bold text-primary">
+            <View
+              className="flex-row items-center gap-1 px-2.5 py-1 rounded-full border"
+              style={{ backgroundColor: currentTheme.primary + '15', borderColor: currentTheme.primary + '25' }}
+            >
+              <Ionicons name="notifications" size={12} color={currentTheme.primary} />
+              <Text className="text-[11px] font-bold" style={{ color: currentTheme.primary }}>
                 {behavior.reminderTime || t(language, 'profile.notifications')}
               </Text>
             </View>
@@ -65,11 +72,12 @@ export function HabitCard({ behavior, isChecked, onCheck, onPress }: HabitCardPr
           onCheck();
         }}
         activeOpacity={0.85}
-        className={`w-9 h-9 rounded-full items-center justify-center border ${
+        className="w-9 h-9 rounded-full items-center justify-center border"
+        style={
           isChecked
-            ? 'bg-primary border-primary'
-            : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
-        }`}
+            ? { backgroundColor: currentTheme.primary, borderColor: currentTheme.primary }
+            : undefined
+        }
       >
         {isChecked ? (
           <Ionicons name="checkmark" size={18} color="white" />

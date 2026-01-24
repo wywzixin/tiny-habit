@@ -2,7 +2,7 @@
 
 > Base URL: `http://localhost:8081`
 > 
-> 更新日期：2026-01-14
+> 更新日期：2026-01-22
 
 ## 统一响应格式
 
@@ -1758,6 +1758,403 @@ if (!result.canceled) {
   "data": null
 }
 ```
+
+---
+
+## 10. AI 推荐模块 `/api/ai`
+
+### 10.1 推荐微行为
+
+`POST /api/ai/recommend/micro-behaviors` （无需认证）
+
+**功能说明：**
+- 使用智谱 AI GLM-4-Flash 模型提供智能推荐
+- 基于福格行为模型（B=MAP）设计提示词
+- 根据用户的习惯目标，推荐不同难度层级的微行为
+- 返回 6 个微行为，按难度从低到高排序（easy → medium → hard）
+- 至少包含 2 个 easy、2 个 medium、2 个 hard
+
+**请求参数：**
+```json
+{
+  "habitName": "跑步5公里",
+  "habitCategory": "运动",
+  "userContext": "想养成跑步习惯，但经常没动力"
+}
+```
+
+**字段说明：**
+| 字段 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| habitName | String | 是 | 习惯名称 |
+| habitCategory | String | 否 | 习惯分类（健康/学习/运动/生活/心理/社交） |
+| userContext | String | 否 | 用户背景信息，帮助 AI 提供更精准的推荐 |
+
+**成功响应：**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": "[{\"name\":\"穿上跑鞋\",\"behavior\":\"穿上鞋\",\"description\":\"启动门槛低，无需高动机，方便启动跑步行为\",\"difficulty\":\"easy\",\"estimatedTime\":\"30秒\",\"icon\":\"👟\"}...]"
+}
+```
+
+**注意：** `data` 是 JSON 字符串，需要用 `JSON.parse()` 解析！返回 6 个微行为。
+
+**返回的 JSON 数组格式：**
+```json
+[
+  {
+    "name": "穿上跑鞋",
+    "behavior": "穿上鞋",
+    "description": "启动门槛低，无需高动机，方便启动跑步行为",
+    "difficulty": "easy",
+    "estimatedTime": "30秒",
+    "icon": "👟"
+  },
+  {
+    "name": "热身走步",
+    "behavior": "走5分钟",
+    "description": "简单易行，无需高动机，为跑步做准备",
+    "difficulty": "easy",
+    "estimatedTime": "5分钟",
+    "icon": "🚶‍♂️"
+  },
+  {
+    "name": "跑步1公里",
+    "behavior": "跑1公里",
+    "description": "小步快跑，建立信心，逐步接近目标",
+    "difficulty": "medium",
+    "estimatedTime": "8分钟",
+    "icon": "🏃"
+  },
+  {
+    "name": "跑步2公里",
+    "behavior": "跑2公里",
+    "description": "适度挑战，提升运动能力，逐步增加距离",
+    "difficulty": "medium",
+    "estimatedTime": "15分钟",
+    "icon": "🏃‍♀️"
+  },
+  {
+    "name": "跑步3公里",
+    "behavior": "跑3公里",
+    "description": "接近目标，提升运动习惯，适合已有基础的用户",
+    "difficulty": "hard",
+    "estimatedTime": "20分钟",
+    "icon": "🏃‍♂️"
+  },
+  {
+    "name": "跑步5公里",
+    "behavior": "跑5公里",
+    "description": "达成目标，完整的跑步习惯，适合有基础的用户",
+    "difficulty": "hard",
+    "estimatedTime": "30分钟",
+    "icon": "🏃‍♂️"
+  }
+]
+```
+
+**推荐数量：** 6 个微行为（2 easy + 2 medium + 2 hard）
+
+**难度级别说明：**
+| 难度 | 时长 | 说明 | 适用场景 |
+|-----|------|------|---------|
+| easy | 30秒-2分钟 | 超级简单的启动行为，零动机门槛 | 完全不想动的时候 |
+| medium | 5-10分钟 | 适度挑战，比最终目标更小但仍有意义 | 有一定动力时 |
+| hard | 10-20分钟 | 接近目标，适合已有基础的用户 | 状态良好时 |
+
+**字段说明：**
+| 字段 | 类型 | 说明 |
+|-----|------|------|
+| name | String | 微行为名称（简洁有力） |
+| behavior | String | 具体行为（10字以内，动词开头） |
+| description | String | 设计理由（基于 B=MAP 模型解释为什么这个设计有效，50字以内） |
+| difficulty | String | 难度等级（easy/medium/hard） |
+| estimatedTime | String | 预计完成时间（如：30秒、2分钟、5分钟、10分钟） |
+| icon | String | emoji 图标 |
+
+**注意事项：**
+- 响应时间：AI 推荐需要 2-5 秒，前端需要显示加载状态
+- JSON 解析：返回的 data 是 JSON 字符串，需要 `JSON.parse()` 解析
+- 后端已自动清理 markdown 代码块标记（```json），确保返回纯 JSON
+- 推荐结果已按难度从低到高排序（easy → medium → hard）
+
+### 10.2 推荐锚点
+
+`POST /api/ai/recommend/anchors` （无需认证）
+
+**功能说明：**
+- 使用智谱 AI GLM-4-Flash 模型提供智能推荐
+- 基于福格行为模型的「锚点理论」设计提示词
+- 根据用户的习惯，推荐合适的锚点行为
+- 返回 6 个锚点，覆盖一天中的不同时间段
+- 帮助用户将新习惯嵌入到现有生活节奏中
+
+**请求参数：**
+```json
+{
+  "habitName": "阅读",
+  "timeOfDay": "晚上",
+  "userContext": "想每天阅读，但总是忘记"
+}
+```
+
+**字段说明：**
+| 字段 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| habitName | String | 是 | 习惯名称 |
+| timeOfDay | String | 否 | 时间段（早上/中午/下午/晚上） |
+| userContext | String | 否 | 用户背景信息 |
+
+**成功响应：**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": "[{\"anchor\":\"刷完牙后\",\"description\":\"高频率（每天2次）、时间固定、易识别，是理想的习惯触发点\",\"timeOfDay\":\"早上\",\"icon\":\"🪥\"}...]"
+}
+```
+
+**注意：** `data` 是 JSON 字符串，需要用 `JSON.parse()` 解析！返回 6 个锚点。
+
+**返回的 JSON 数组格式：**
+```json
+[
+  {
+    "anchor": "刷完牙后",
+    "description": "高频率（每天2次）、时间固定、易识别，是理想的习惯触发点",
+    "timeOfDay": "早上",
+    "icon": "🪥"
+  },
+  {
+    "anchor": "吃完早饭后",
+    "description": "每天必做，时间相对固定，适合开始晨间习惯",
+    "timeOfDay": "早上",
+    "icon": "🍳"
+  },
+  {
+    "anchor": "到公司后",
+    "description": "工作日固定行为，适合开始工作相关习惯",
+    "timeOfDay": "早上",
+    "icon": "🏢"
+  },
+  {
+    "anchor": "午休结束后",
+    "description": "精神恢复，适合开始下午的习惯养成",
+    "timeOfDay": "下午",
+    "icon": "☕"
+  },
+  {
+    "anchor": "吃完晚饭后",
+    "description": "每天必做，时间相对固定，适合开始晚间习惯",
+    "timeOfDay": "晚上",
+    "icon": "🍽️"
+  },
+  {
+    "anchor": "洗完澡后",
+    "description": "放松状态，适合开始睡前习惯",
+    "timeOfDay": "晚上",
+    "icon": "🚿"
+  }
+]
+```
+
+**推荐数量：** 6 个锚点（覆盖一天中的不同时间段）
+
+**锚点选择标准：**
+| 标准 | 说明 |
+|-----|------|
+| 高频率（Frequency） | 用户每天都会做的固定行为 |
+| 可预测（Predictability） | 发生时间和地点相对固定 |
+| 易识别（Recognizability） | 用户能立即意识到这个时刻 |
+| 自然关联（Natural Connection） | 与目标习惯有逻辑或情境上的联系 |
+| 情绪中性（Emotional Neutrality） | 不是在压力或负面情绪下发生的行为 |
+
+**字段说明：**
+| 字段 | 类型 | 说明 |
+|-----|------|------|
+| anchor | String | 锚点行为（8字以内，清晰具体） |
+| description | String | 推荐理由（基于锚点理论解释为什么这是好的触发点，50字以内） |
+| timeOfDay | String | 时间段（早上/中午/下午/晚上） |
+| icon | String | emoji 图标 |
+
+**注意事项：**
+- 响应时间：AI 推荐需要 2-5 秒，前端需要显示加载状态
+- JSON 解析：返回的 data 是 JSON 字符串，需要 `JSON.parse()` 解析
+- 后端已自动清理 markdown 代码块标记
+- 优先推荐用户每天必做的「仪式性行为」
+
+### 10.3 理论基础
+
+本功能基于斯坦福大学 B.J. Fogg 博士的《福格行为模型》（Tiny Habits）理论：
+
+**B=MAP 模型：**
+- **B（Behavior）**：行为
+- **M（Motivation）**：动机
+- **A（Ability）**：能力
+- **P（Prompt）**：提示
+
+**核心原则：**
+1. 降低能力门槛，让行为变得超级简单
+2. 不依赖高动机，即使动机低也能完成
+3. 使用锚点（现有习惯）触发新习惯
+4. 渐进式提升，从微小行为开始
+
+**为什么有效：**
+- 微行为降低了心理门槛，更容易开始
+- 成功完成微行为会带来成就感，形成正向循环
+- 锚点利用现有习惯，减少记忆负担
+- 渐进式提升避免了一次性改变带来的压力
+
+### 10.4 使用示例
+
+**cURL 示例：**
+
+推荐微行为：
+```bash
+curl -X POST http://localhost:8081/api/ai/recommend/micro-behaviors \
+  -H "Content-Type: application/json" \
+  -d '{
+    "habitName": "跑步5公里",
+    "habitCategory": "运动",
+    "userContext": "想养成跑步习惯，但经常没动力"
+  }'
+```
+
+推荐锚点：
+```bash
+curl -X POST http://localhost:8081/api/ai/recommend/anchors \
+  -H "Content-Type: application/json" \
+  -d '{
+    "habitName": "阅读",
+    "timeOfDay": "晚上",
+    "userContext": "想每天阅读，但总是忘记"
+  }'
+```
+
+**JavaScript 示例：**
+
+```javascript
+// 推荐微行为
+async function recommendMicroBehaviors() {
+  const response = await fetch('http://localhost:8081/api/ai/recommend/micro-behaviors', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      habitName: '跑步5公里',
+      habitCategory: '运动',
+      userContext: '想养成跑步习惯，但经常没动力'
+    })
+  });
+  
+  const result = await response.json();
+  if (result.code === 200) {
+    const recommendations = JSON.parse(result.data);
+    console.log(recommendations);
+    // 按难度分组显示
+    const easy = recommendations.filter(r => r.difficulty === 'easy');
+    const medium = recommendations.filter(r => r.difficulty === 'medium');
+    const hard = recommendations.filter(r => r.difficulty === 'hard');
+  }
+}
+
+// 推荐锚点
+async function recommendAnchors() {
+  const response = await fetch('http://localhost:8081/api/ai/recommend/anchors', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      habitName: '阅读',
+      timeOfDay: '晚上',
+      userContext: '想每天阅读，但总是忘记'
+    })
+  });
+  
+  const result = await response.json();
+  if (result.code === 200) {
+    const recommendations = JSON.parse(result.data);
+    console.log(recommendations);
+    // 按时间段分组显示
+    const morning = recommendations.filter(r => r.timeOfDay === '早上');
+    const evening = recommendations.filter(r => r.timeOfDay === '晚上');
+  }
+}
+```
+
+**React Native 示例：**
+
+```javascript
+import React, { useState } from 'react';
+import { View, Text, Button, ActivityIndicator } from 'react-native';
+
+function AiRecommendation() {
+  const [loading, setLoading] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
+
+  const getMicroBehaviors = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('http://192.168.10.64:8081/api/ai/recommend/micro-behaviors', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          habitName: '跑步5公里',
+          habitCategory: '运动',
+          userContext: '想养成跑步习惯，但经常没动力'
+        })
+      });
+      
+      const result = await response.json();
+      if (result.code === 200) {
+        const data = JSON.parse(result.data);
+        setRecommendations(data);
+      }
+    } catch (error) {
+      console.error('推荐失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View>
+      <Button title="获取 AI 推荐" onPress={getMicroBehaviors} />
+      {loading && <ActivityIndicator />}
+      {recommendations.map((item, index) => (
+        <View key={index}>
+          <Text>{item.icon} {item.name}</Text>
+          <Text>难度: {item.difficulty}</Text>
+          <Text>{item.description}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+```
+
+### 10.5 配置信息
+
+- **模型**：glm-4-flash
+- **API Key**：配置在 `application.yml` 中
+- **最大 Token**：1024
+- **Temperature**：0.7
+- **SDK 版本**：ZhipuAI Java SDK v0.3.0
+
+### 10.6 相关文件
+
+- `src/main/java/com/tinyhabits/service/AiService.java` - 服务接口
+- `src/main/java/com/tinyhabits/service/impl/AiServiceImpl.java` - 服务实现（包含提示词设计）
+- `src/main/java/com/tinyhabits/controller/AiController.java` - 控制器
+- `src/main/java/com/tinyhabits/config/ZhipuAiConfig.java` - 配置类
+- `src/main/resources/application.yml` - 配置文件
+- `docs/ai-recommendation-api.md` - 详细 API 文档
 
 ---
 

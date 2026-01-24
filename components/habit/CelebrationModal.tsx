@@ -2,6 +2,7 @@ import { View, Text, Modal, Animated } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../stores';
+import { themeColors } from '../../stores/authStore';
 import { t } from '../../utils/i18n';
 
 interface CelebrationModalProps {
@@ -13,6 +14,14 @@ interface CelebrationModalProps {
 export function CelebrationModal({ visible, celebration, onClose }: CelebrationModalProps) {
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
   const language = useAuthStore((s) => s.language);
+  const themeColor = useAuthStore((s) => s.themeColor);
+  const currentTheme = themeColors[themeColor];
+
+  // 生成渐变色
+  const gradientColors: [string, string] = isDarkMode
+    ? [currentTheme.primary + 'CC', currentTheme.primary]
+    : [currentTheme.primary, currentTheme.primary + 'CC'];
+
   const cardScale = useRef(new Animated.Value(0.96)).current;
   const iconScale = useRef(new Animated.Value(0.92)).current;
   const iconRotate = useRef(new Animated.Value(0)).current;
@@ -82,7 +91,7 @@ export function CelebrationModal({ visible, celebration, onClose }: CelebrationM
             <View className="items-center">
               <Animated.View style={{ transform: [{ scale: iconScale }, { rotate }] }}>
                 <LinearGradient
-                  colors={isDarkMode ? ['#059669', '#10B981'] : ['#10B981', '#34D399']}
+                  colors={gradientColors}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={{
@@ -103,7 +112,7 @@ export function CelebrationModal({ visible, celebration, onClose }: CelebrationM
                 {t(language, 'home.energyTitle')}
               </Text>
               <View className="mt-2 px-3 py-1.5 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
-                <Text className="text-[12px] font-extrabold text-primary">
+                <Text className="text-[12px] font-extrabold" style={{ color: currentTheme.primary }}>
                   +10 {t(language, 'common.points')}
                 </Text>
               </View>

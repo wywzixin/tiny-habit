@@ -15,3 +15,6 @@ export * from './useStats';
 
 // 奖励相关 Hooks
 export * from './useReward';
+
+// AI 推荐相关 Hooks
+export * from './useAiRecommend';

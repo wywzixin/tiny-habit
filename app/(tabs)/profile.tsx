@@ -10,7 +10,7 @@ import { getLocale, t } from '../../utils/i18n';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { isDarkMode, toggleDarkMode, isLoggedIn, user, updateUser, language, setLanguage } = useAuthStore();
+  const { isDarkMode, toggleDarkMode, isLoggedIn, user, updateUser, language, setLanguage, notificationsEnabled, toggleNotifications } = useAuthStore();
   const [showLanguageSheet, setShowLanguageSheet] = useState(false);
   
   // 获取最新的统计数据
@@ -68,15 +68,14 @@ export default function ProfileScreen() {
 
   const menuItems = [
     { icon: 'gift', label: t(language, 'profile.rewards'), route: '/rewards' },
-    { icon: 'color-palette', label: t(language, 'profile.theme') },
+    { icon: 'color-palette', label: t(language, 'profile.theme'), route: '/profile/theme' },
     {
       icon: 'globe',
       label: t(language, 'profile.language'),
       onPress: () => setShowLanguageSheet(true),
       value: language === 'zh' ? t(language, 'profile.languageZh') : t(language, 'profile.languageEn'),
     },
-    { icon: 'notifications', label: t(language, 'profile.notifications') },
-    { icon: 'book', label: t(language, 'profile.about') },
+    { icon: 'book', label: t(language, 'profile.about'), route: '/profile/about-fogg' },
     { icon: 'chatbubble', label: t(language, 'profile.feedback'), route: '/profile/feedback' },
   ];
 
@@ -197,6 +196,25 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             );
           })}
+
+          <View className="px-4 py-4 flex-row items-center justify-between border-t border-appBorder dark:border-appDarkBorder">
+            <View className="flex-row items-center gap-3">
+              <View className="w-10 h-10 rounded-2xl bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
+                <Ionicons name="notifications" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+              </View>
+              <View>
+                <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">
+                  {t(language, 'profile.notifications')}
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={toggleNotifications}
+              trackColor={{ false: '#e7e5e4', true: '#10B981' }}
+              thumbColor="white"
+            />
+          </View>
 
           <View className="px-4 py-4 flex-row items-center justify-between border-t border-appBorder dark:border-appDarkBorder">
             <View className="flex-row items-center gap-3">

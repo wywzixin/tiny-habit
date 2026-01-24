@@ -9,7 +9,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useHabitStore, useAuthStore } from '../stores';
 import { celebrations, weekDays } from '../constants';
 import { BottomSheet } from '../components/ui/BottomSheet';
-import { useCreateRecipe, useHabitLibrary, useDeleteHabit, useUpdateRecipe } from '../services/api/hooks';
+import { useCreateRecipe, useHabitLibrary, useDeleteHabit, useUpdateRecipe, useRecommendMicroBehaviors, useRecommendAnchors } from '../services/api/hooks';
+import { RecommendedMicroBehavior, RecommendedAnchor } from '../services/api/ai';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../services/api/client';
 import { getLocale, t } from '../utils/i18n';
@@ -321,6 +322,16 @@ export default function CreateScreen() {
   const [reminderTime, setReminderTime] = useState(new Date(2026, 0, 1, 8, 0));
   const [showTimePicker, setShowTimePicker] = useState(false);
 
+  // AI 推荐状态
+  const [aiMicroBehaviors, setAiMicroBehaviors] = useState<RecommendedMicroBehavior[]>([]);
+  const [aiAnchors, setAiAnchors] = useState<RecommendedAnchor[]>([]);
+  const [selectedIcon, setSelectedIcon] = useState('✨');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
+
+  // AI 推荐 mutations
+  const recommendMicroBehaviorsMutation = useRecommendMicroBehaviors();
+  const recommendAnchorsMutation = useRecommendAnchors();
+
   const todayLabel = new Date().toLocaleDateString(getLocale(language), {
     month: 'long',
     day: 'numeric',
@@ -449,6 +460,130 @@ export default function CreateScreen() {
     setFrequency((prev) =>
       prev.includes(backendDay) ? prev.filter((d) => d !== backendDay) : [...prev, backendDay].sort()
     );
+  };
+
+  // AI 推荐微行为
+  const handleAiRecommendBehaviors = async () => {
+    if (!goal.trim()) {
+      return;
+    }
+
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const result = await recommendMicroBehaviorsMutation.mutateAsync({
+        habitName: goal.trim(),
+        habitCategory: undefined,
+        userContext: undefined,
+      });
+      console.log('=== AI 推荐微行为返回内容 ===');
+      console.log(JSON.stringify(result, null, 2));
+      setAiMicroBehaviors(result);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error: any) {
+      console.error('AI 推荐微行为失败:', error);
+    }
+  };
+
+  // AI 推荐锚点
+  const handleAiRecommendAnchors = async () => {
+    if (!goal.trim()) {
+      return;
+    }
+
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const result = await recommendAnchorsMutation.mutateAsync({
+        habitName: goal.trim(),
+        timeOfDay: undefined,
+        userContext: undefined,
+      });
+      console.log('=== AI 推荐锚点返回内容 ===');
+      console.log(JSON.stringify(result, null, 2));
+      setAiAnchors(result);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error: any) {
+      console.error('AI 推荐锚点失败:', error);
+    }
+  };
+
+  // 输入框失去焦点时触发 AI 推荐（同时请求微行为和锚点）
+  const handleGoalBlur = async () => {
+    const trimmedGoal = goal.trim();
+    if (trimmedGoal && trimmedGoal.length >= 2) {
+      // 同时触发微行为和锚点推荐
+      handleAiRecommendBehaviors();
+      handleAiRecommendAnchors();
+    }
+  };
+
+  // 选择 AI 推荐的微行为
+  const selectAiMicroBehavior = (item: RecommendedMicroBehavior) => {
+    setBehavior(item.name || item.behavior);
+    setSelectedIcon(item.icon);
+    setSelectedDifficulty(item.difficulty);
+    Haptics.selectionAsync();
+
+    // 选择微行为后，自动触发锚点推荐（传入微行为信息以获得更精准的推荐）
+    if (goal.trim()) {
+      console.log('=== 点击微行为，准备请求锚点接口 ===');
+      console.log('选择的微行为:', {
+        name: item.name,
+        behavior: item.behavior,
+        difficulty: item.difficulty,
+        icon: item.icon,
+        estimatedTime: item.estimatedTime,
+      });
+      console.log('传递给锚点接口的参数:', {
+        habitName: goal.trim(),
+        timeOfDay: undefined,
+        userContext: `用户选择的微行为是"${item.name}"（${item.behavior}），难度为${item.difficulty}`,
+      });
+      triggerAnchorRecommendWithBehavior(item);
+    }
+  };
+
+  // 根据选择的微行为推荐锚点
+  const triggerAnchorRecommendWithBehavior = async (selectedBehavior: RecommendedMicroBehavior) => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const result = await recommendAnchorsMutation.mutateAsync({
+        habitName: goal.trim(),
+        timeOfDay: undefined,
+        // 将微行为信息作为上下文传递给后端
+        userContext: `用户选择的微行为是"${selectedBehavior.name}"（${selectedBehavior.behavior}），难度为${selectedBehavior.difficulty}`,
+      });
+      console.log('=== AI 推荐锚点返回内容（基于微行为）===');
+      console.log(JSON.stringify(result, null, 2));
+      setAiAnchors(result);
+    } catch (error: any) {
+      console.error('AI 推荐锚点失败:', error);
+    }
+  };
+
+  // 选择 AI 推荐的锚点
+  const selectAiAnchor = (item: RecommendedAnchor) => {
+    setAnchor(item.anchor);
+    Haptics.selectionAsync();
+  };
+
+  // 获取难度样式（使用后端返回的 estimatedTime）
+  const getDifficultyStyle = (difficulty: string) => {
+    const colorMap = {
+      easy: 'bg-green-500',
+      medium: 'bg-orange-500',
+      hard: 'bg-red-500',
+    };
+
+    const textMap = {
+      easy: t(language, 'create.levelEasy'),
+      medium: t(language, 'create.levelMedium'),
+      hard: t(language, 'create.levelHard'),
+    };
+
+    return {
+      bg: colorMap[difficulty as keyof typeof colorMap] || 'bg-green-500',
+      text: textMap[difficulty as keyof typeof textMap] || textMap.easy,
+    };
   };
 
 const handleDeleteUserHabit = async (id: number | string, name: string) => {
@@ -669,6 +804,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
             <TextInput
               value={goal}
               onChangeText={setGoal}
+              onBlur={handleGoalBlur}
               placeholder={t(language, 'create.goalPlaceholder')}
               className="flex-1 ml-2 text-[14px] font-semibold text-appText dark:text-appDarkText"
               placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
@@ -687,51 +823,99 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
 
         {/* Behavior Selection */}
         <View className="mb-8">
-          <View className="flex-row items-center gap-2 mb-1">
+          <View className="flex-row items-center justify-between mb-1">
             <Text className="text-lg font-extrabold text-appText dark:text-appDarkText">{t(language, 'create.behaviorTitle')}</Text>
-            <LinearGradient
-              colors={['#8B5CF6', '#EC4899']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 }}
+            <TouchableOpacity
+              onPress={handleAiRecommendBehaviors}
+              disabled={recommendMicroBehaviorsMutation.isPending}
+              activeOpacity={0.85}
+              style={{ opacity: recommendMicroBehaviorsMutation.isPending ? 0.6 : 1 }}
             >
-              <Text className="text-[10px] font-bold text-white">{t(language, 'create.aiRecommend')}</Text>
-            </LinearGradient>
+              <LinearGradient
+                colors={['#8B5CF6', '#EC4899']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+              >
+                <Ionicons name="sparkles" size={12} color="white" />
+                <Text className="text-[11px] font-bold text-white">
+                  {t(language, 'create.aiRecommend')}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
           <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">{t(language, 'create.behaviorHint')}</Text>
-          <View className="gap-2 mb-3">
-            {aiRecommendations.behaviors.map((item) => (
-              <TouchableOpacity
-                key={item.text}
-                onPress={() => { setBehavior(item.text); Haptics.selectionAsync(); }}
-                activeOpacity={0.88}
-                className={`p-4 rounded-[22px] border flex-row items-center ${
-                  behavior === item.text
-                    ? 'bg-primary/10 dark:bg-primary/15 border-primary/25 dark:border-primary/30'
-                    : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
-                }`}
-              >
-                <View className="w-12 h-12 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
-                  <Text className="text-[22px]">{item.icon}</Text>
-                </View>
-                <View className="flex-1">
-                  <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText">{item.text}</Text>
-                  <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-1">
-                    {item.difficulty === 'easy'
-                      ? t(language, 'create.levelEasy')
-                      : item.difficulty === 'medium'
-                        ? t(language, 'create.levelMedium')
-                        : t(language, 'create.levelHard')}
-                  </Text>
-                </View>
-                {behavior === item.text && (
-                  <View className="w-9 h-9 rounded-full bg-primary items-center justify-center">
-                    <Ionicons name="checkmark" size={18} color="white" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
+
+          {/* AI 推荐的微行为列表 */}
+          {recommendMicroBehaviorsMutation.isPending ? (
+            <View className="p-6 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center mb-3">
+              <View className="flex-row items-center gap-2">
+                <Ionicons name="sparkles" size={18} color="#8B5CF6" />
+                <Text className="text-[14px] font-bold text-appMuted dark:text-appDarkMuted">
+                  {t(language, 'create.aiThinking')}
+                </Text>
+              </View>
+              <Text className="text-[12px] font-medium text-appMuted dark:text-appDarkMuted mt-2">
+                {t(language, 'create.aiGenerating')}
+              </Text>
+            </View>
+          ) : aiMicroBehaviors.length > 0 ? (
+            <ScrollView
+              className="mb-3"
+              style={{ maxHeight: 320 }}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={true}
+            >
+              <View className="gap-2">
+              {aiMicroBehaviors.map((item, index) => {
+                const difficultyStyle = getDifficultyStyle(item.difficulty);
+                const isSelected = behavior === item.behavior;
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => selectAiMicroBehavior(item)}
+                    activeOpacity={0.88}
+                    className={`p-4 rounded-[22px] border ${
+                      isSelected
+                        ? 'bg-primary/10 dark:bg-primary/15 border-primary/25 dark:border-primary/30'
+                        : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
+                    }`}
+                  >
+                    <View className="flex-row items-center">
+                      <View className="w-12 h-12 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
+                        <Text className="text-[22px]">{item.icon}</Text>
+                      </View>
+                      <View className="flex-1">
+                        <View className="flex-row items-center gap-2 flex-wrap">
+                          <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText">{item.name}</Text>
+                          <View className={`px-2 py-0.5 rounded-full ${difficultyStyle.bg}`}>
+                            <Text className="text-[10px] font-bold text-white">
+                              {difficultyStyle.text}{item.estimatedTime ? ` · ${item.estimatedTime}内完成` : ''}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text className="text-[12px] font-medium text-appMuted dark:text-appDarkMuted mt-1.5" numberOfLines={2}>
+                          {item.description}
+                        </Text>
+                      </View>
+                      {isSelected && (
+                        <View className="w-9 h-9 rounded-full bg-primary items-center justify-center ml-2">
+                          <Ionicons name="checkmark" size={18} color="white" />
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+              </View>
+            </ScrollView>
+          ) : (
+            <View className="p-6 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center mb-3">
+              <Text className="text-[14px] font-semibold text-appMuted dark:text-appDarkMuted text-center">
+                {t(language, 'create.inputHabitForAi')}
+              </Text>
+            </View>
+          )}
           <TextInput
             value={behavior}
             onChangeText={setBehavior}
@@ -743,42 +927,96 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
 
         {/* Anchor Selection */}
         <View className="mb-8">
-          <View className="flex-row items-center gap-2 mb-1">
+          <View className="flex-row items-center justify-between mb-1">
             <Text className="text-lg font-extrabold text-appText dark:text-appDarkText">{t(language, 'create.anchorTitle')}</Text>
-            <LinearGradient
-              colors={['#8B5CF6', '#EC4899']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 }}
+            <TouchableOpacity
+              onPress={handleAiRecommendAnchors}
+              disabled={recommendAnchorsMutation.isPending}
+              activeOpacity={0.85}
+              style={{ opacity: recommendAnchorsMutation.isPending ? 0.6 : 1 }}
             >
-              <Text className="text-[10px] font-bold text-white">{t(language, 'create.aiRecommend')}</Text>
-            </LinearGradient>
+              <LinearGradient
+                colors={['#8B5CF6', '#EC4899']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+              >
+                <Ionicons name="sparkles" size={12} color="white" />
+                <Text className="text-[11px] font-bold text-white">
+                  {t(language, 'create.aiRecommend')}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
           <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">{t(language, 'create.anchorHint')}</Text>
-          <View className="gap-2 mb-3">
-            {aiRecommendations.anchors.map((item) => (
-              <TouchableOpacity
-                key={item.text}
-                onPress={() => { setAnchor(item.text); Haptics.selectionAsync(); }}
-                activeOpacity={0.88}
-                className={`p-4 rounded-[22px] border flex-row items-center ${
-                  anchor === item.text
-                    ? 'bg-primary/10 dark:bg-primary/15 border-primary/25 dark:border-primary/30'
-                    : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
-                }`}
-              >
-                <View className="w-12 h-12 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
-                  <Text className="text-[22px]">{item.icon}</Text>
-                </View>
-                <Text className="flex-1 text-[15px] font-extrabold text-appText dark:text-appDarkText">{item.text}</Text>
-                {anchor === item.text && (
-                  <View className="w-9 h-9 rounded-full bg-primary items-center justify-center">
-                    <Ionicons name="checkmark" size={18} color="white" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
+
+          {/* AI 推荐的锚点列表 */}
+          {recommendAnchorsMutation.isPending ? (
+            <View className="p-6 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center mb-3">
+              <View className="flex-row items-center gap-2">
+                <Ionicons name="sparkles" size={18} color="#8B5CF6" />
+                <Text className="text-[14px] font-bold text-appMuted dark:text-appDarkMuted">
+                  {t(language, 'create.aiThinking')}
+                </Text>
+              </View>
+              <Text className="text-[12px] font-medium text-appMuted dark:text-appDarkMuted mt-2">
+                {t(language, 'create.aiGenerating')}
+              </Text>
+            </View>
+          ) : aiAnchors.length > 0 ? (
+            <ScrollView
+              className="mb-3"
+              style={{ maxHeight: 280 }}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={true}
+            >
+              <View className="gap-2">
+              {aiAnchors.map((item, index) => {
+                const isSelected = anchor === item.anchor;
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => selectAiAnchor(item)}
+                    activeOpacity={0.88}
+                    className={`p-4 rounded-[22px] border ${
+                      isSelected
+                        ? 'bg-primary/10 dark:bg-primary/15 border-primary/25 dark:border-primary/30'
+                        : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
+                    }`}
+                  >
+                    <View className="flex-row items-center">
+                      <View className="w-12 h-12 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
+                        <Text className="text-[22px]">{item.icon}</Text>
+                      </View>
+                      <View className="flex-1">
+                        <View className="flex-row items-center gap-2">
+                          <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText">{item.anchor}</Text>
+                          <View className="px-2 py-0.5 rounded-full bg-blue-500">
+                            <Text className="text-[10px] font-bold text-white">{item.timeOfDay}</Text>
+                          </View>
+                        </View>
+                        <Text className="text-[11px] font-medium text-appMuted dark:text-appDarkMuted mt-1" numberOfLines={2}>
+                          {item.description}
+                        </Text>
+                      </View>
+                      {isSelected && (
+                        <View className="w-9 h-9 rounded-full bg-primary items-center justify-center ml-2">
+                          <Ionicons name="checkmark" size={18} color="white" />
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+              </View>
+            </ScrollView>
+          ) : (
+            <View className="p-6 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center mb-3">
+              <Text className="text-[14px] font-semibold text-appMuted dark:text-appDarkMuted text-center">
+                {behavior ? t(language, 'create.aiGenerating') : t(language, 'create.selectBehaviorFirst')}
+              </Text>
+            </View>
+          )}
           <TextInput
             value={anchor}
             onChangeText={setAnchor}
