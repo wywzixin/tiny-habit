@@ -1,7 +1,6 @@
 import { View, Text, Modal, TouchableOpacity, Animated } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { useAuthStore } from '../../stores';
-import { t } from '../../utils/i18n';
 
 interface ConfirmModalProps {
   visible: boolean;
@@ -17,15 +16,12 @@ export function ConfirmModal({
   visible,
   title,
   message,
-  cancelText,
-  confirmText,
+  cancelText = '再想想',
+  confirmText = '确定',
   onCancel,
   onConfirm,
 }: ConfirmModalProps) {
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
-  const language = useAuthStore((s) => s.language);
-  const resolvedCancelText = cancelText || t(language, 'common.cancel');
-  const resolvedConfirmText = confirmText || t(language, 'common.confirm');
   const cardScale = useRef(new Animated.Value(0.96)).current;
 
   useEffect(() => {
@@ -63,7 +59,7 @@ export function ConfirmModal({
                 className="flex-1 bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder rounded-2xl py-3"
               >
                 <Text className="text-[15px] font-bold text-appText dark:text-appDarkText text-center">
-                  {resolvedCancelText}
+                  {cancelText}
                 </Text>
               </TouchableOpacity>
 
@@ -73,7 +69,7 @@ export function ConfirmModal({
                 className="flex-1 bg-red-500 rounded-2xl py-3"
               >
                 <Text className="text-[15px] font-bold text-white text-center">
-                  {resolvedConfirmText}
+                  {confirmText}
                 </Text>
               </TouchableOpacity>
             </View>

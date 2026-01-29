@@ -38,14 +38,12 @@ interface AuthState {
   isDarkMode: boolean;
   language: 'zh' | 'en';
   themeColor: ThemeColor;
-  notificationsEnabled: boolean;
 
   // Actions
   setAuth: (token: string, user: User) => void;
   clearAuth: () => void;
   updateUser: (user: Partial<User>) => void;
   toggleDarkMode: () => void;
-  toggleNotifications: () => void;
   setLanguage: (language: 'zh' | 'en') => void;
   setThemeColor: (color: ThemeColor) => void;
 }
@@ -60,7 +58,6 @@ export const useAuthStore = create<AuthState>()(
       isDarkMode: false,
       language: 'zh',
       themeColor: 'green',
-      notificationsEnabled: true,
 
       // 设置认证信息（登录/注册成功后调用）
       setAuth: (token, user) => {
@@ -91,9 +88,6 @@ export const useAuthStore = create<AuthState>()(
       toggleDarkMode: () => {
         set((state) => ({ isDarkMode: !state.isDarkMode }));
       },
-      toggleNotifications: () => {
-        set((state) => ({ notificationsEnabled: !state.notificationsEnabled }));
-      },
       setLanguage: (language) => {
         set({ language });
       },
@@ -105,14 +99,6 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 2,
-      migrate: (persistedState: any) => {
-        if (!persistedState) return persistedState;
-        return {
-          ...persistedState,
-          notificationsEnabled: true,
-        };
-      },
     }
   )
 );

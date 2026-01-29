@@ -18,7 +18,7 @@ export const useUserStats = (userId?: number) => {
  */
 export const useTodayCheckIns = (userId?: number) => {
   return useQuery({
-    queryKey: [...queryKeys.userStats(userId?.toString() || ''), 'today-checkins-v2'],
+    queryKey: [...queryKeys.userStats(userId?.toString() || ''), 'today-checkins'],
     queryFn: () => statsApi.getTodayCheckIns(userId!),
     enabled: !!userId,
   });

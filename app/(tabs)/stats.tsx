@@ -6,10 +6,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useUserStats, useTodayCheckIns as useTodayStatsCheckIns } from '../../services/api/hooks/useStats';
 import { useMemo } from 'react';
 import { getLocale, t } from '../../utils/i18n';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function StatsScreen() {
   const user = useAuthStore((s) => s.user);
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
+  const { primary } = useTheme();
   const { microBehaviors, checkIns } = useHabitStore();
 
   // 已登录：从后端 API 获取统计数据
@@ -247,7 +249,7 @@ export default function StatsScreen() {
                   return (
                     <View key={`${moment.checkedAt}-${index}`} className="flex-row gap-3">
                       <View className="w-5 items-center">
-                        <View className="w-3.5 h-3.5 rounded-full bg-primary mt-3 z-10" />
+                        <View className="w-3.5 h-3.5 rounded-full mt-3 z-10" style={{ backgroundColor: primary }} />
                       </View>
                       <View className="flex-1 bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
                         <View className="flex-row items-start gap-3">
@@ -269,7 +271,9 @@ export default function StatsScreen() {
 
                             <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-3">
                               {t(language, 'stats.celebration')}：
-                              <Text className="text-primary font-extrabold">{moment.celebration || t(language, 'stats.noCelebration')}</Text>
+                              <Text className="font-extrabold" style={{ color: primary }}>
+                                {moment.celebration || t(language, 'stats.noCelebration')}
+                              </Text>
                             </Text>
                           </View>
                         </View>

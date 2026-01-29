@@ -7,7 +7,6 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../stores';
 import { resetPassword as resetPasswordApi } from '../../services/api';
 import { useState as useReactState } from 'react';
-import { t } from '../../utils/i18n';
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim().toLowerCase());
@@ -20,7 +19,6 @@ function isValidPhone(value: string) {
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
-  const language = useAuthStore((s) => s.language);
 
   const [identifier, setIdentifier] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -39,15 +37,15 @@ export default function ForgotPasswordScreen() {
   const handleSubmit = async () => {
     setError('');
     if (!validIdentifier) {
-      setError(t(language, 'auth.invalidAccount'));
+      setError('请输入邮箱或手机号');
       return;
     }
     if (!validPassword) {
-      setError(t(language, 'auth.invalidPassword'));
+      setError('密码至少 6 位');
       return;
     }
     if (!matchPassword) {
-      setError(t(language, 'auth.passwordNotMatch'));
+      setError('两次密码不一致');
       return;
     }
     
@@ -64,7 +62,7 @@ export default function ForgotPasswordScreen() {
       router.back();
     } catch (error: any) {
       console.error('重置密码失败 - 详细信息:', error);
-      const friendlyMessage = resetPasswordMutation.meta?.getErrorMessage?.(error) || t(language, 'auth.resetFailed');
+      const friendlyMessage = resetPasswordMutation.meta?.getErrorMessage?.(error) || '重置密码失败';
       setError(friendlyMessage);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
@@ -82,7 +80,7 @@ export default function ForgotPasswordScreen() {
       >
         <View className="pb-6">
           <View className="flex-row items-center justify-between">
-            <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">{t(language, 'auth.forgotPassword')}</Text>
+            <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">忘记密码</Text>
             <TouchableOpacity
               onPress={() => router.back()}
               activeOpacity={0.85}
@@ -99,7 +97,7 @@ export default function ForgotPasswordScreen() {
             <TextInput
               value={identifier}
               onChangeText={setIdentifier}
-              placeholder={t(language, 'auth.account')}
+              placeholder="输入邮箱或手机号"
               autoCapitalize="none"
               keyboardType="default"
               className="flex-1 ml-2 h-full text-[14px] font-semibold text-appText dark:text-appDarkText"
@@ -113,7 +111,7 @@ export default function ForgotPasswordScreen() {
             <TextInput
               value={newPassword}
               onChangeText={setNewPassword}
-              placeholder={t(language, 'auth.newPassword')}
+              placeholder="设置新密码"
               secureTextEntry={!showPassword}
               autoCapitalize="none"
               className="flex-1 ml-2 h-full text-[14px] font-semibold text-appText dark:text-appDarkText"
@@ -130,7 +128,7 @@ export default function ForgotPasswordScreen() {
             <TextInput
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              placeholder={t(language, 'auth.confirmPassword')}
+              placeholder="再次输入新密码"
               secureTextEntry={!showPassword}
               autoCapitalize="none"
               className="flex-1 ml-2 h-full text-[14px] font-semibold text-appText dark:text-appDarkText"
@@ -158,7 +156,7 @@ export default function ForgotPasswordScreen() {
             className={`py-4 rounded-[22px] items-center ${canSubmit ? 'bg-appText dark:bg-appDarkText' : 'bg-appBorder dark:bg-appDarkBorder'}`}
           >
             <Text className={`text-[14px] font-extrabold ${canSubmit ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'}`}>
-              {loading ? t(language, 'common.loading') : t(language, 'auth.resetPassword')}
+              {loading ? '重置中...' : '重置密码'}
             </Text>
           </TouchableOpacity>
         </View>

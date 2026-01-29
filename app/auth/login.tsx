@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../stores';
 import { useLogin } from '../../services/api';
 import { t } from '../../utils/i18n';
+import { useTheme } from '../../hooks/useTheme';
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim().toLowerCase());
@@ -20,6 +21,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
   const language = useAuthStore((s) => s.language);
+  const { primary } = useTheme();
   
   // 使用 React Query mutation
   const loginMutation = useLogin();
@@ -124,7 +126,9 @@ export default function LoginScreen() {
                   ) : null}
                 </View>
                 <TouchableOpacity onPress={() => router.push('/auth/forgot')} activeOpacity={0.85}>
-                  <Text className="text-[12px] font-extrabold text-primary">{t(language, 'auth.forgotPassword')}</Text>
+                  <Text className="text-[12px] font-extrabold" style={{ color: primary }}>
+                    {t(language, 'auth.forgotPassword')}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -154,7 +158,9 @@ export default function LoginScreen() {
               <View className="mt-4 flex-row items-center justify-center">
                 <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted">{t(language, 'auth.noAccount')}</Text>
                 <TouchableOpacity onPress={() => router.push('/auth/register')} activeOpacity={0.85} className="ml-1">
-                  <Text className="text-[12px] font-extrabold text-primary">{t(language, 'auth.gotoRegister')}</Text>
+                  <Text className="text-[12px] font-extrabold" style={{ color: primary }}>
+                    {t(language, 'auth.gotoRegister')}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>

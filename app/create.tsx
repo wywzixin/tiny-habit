@@ -636,11 +636,11 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
       addMicroBehavior({
         habitId: 'local-habit-1',
         name: behavior,
-        icon: '✨',
+        icon: selectedIcon,
         anchor,
         behavior,
         celebration,
-        difficulty: 'easy',
+        difficulty: selectedDifficulty,
         frequency,
         reminderEnabled,
         reminderTime: reminderEnabled ? formatTime(reminderTime) : undefined,
@@ -657,15 +657,15 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
     try {
       await createRecipeMutation.mutateAsync({
         habitName: goal.trim() || behavior.trim(),
-        habitIcon: '✨',
+        habitIcon: selectedIcon,
         habitCategory: '自定义',
         microBehavior: {
           name: behavior,
-          icon: '✨',
+          icon: selectedIcon,
           anchor,
           behavior,
           celebration,
-          difficulty: 'easy',
+          difficulty: selectedDifficulty,
           frequency,
           reminderEnabled,
           reminderTime: reminderEnabled ? formatTime(reminderTime) : undefined,

@@ -2,8 +2,6 @@ import { View, Text, Modal, Animated } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../stores';
-import { themeColors } from '../../stores/authStore';
-import { t } from '../../utils/i18n';
 
 interface CelebrationModalProps {
   visible: boolean;
@@ -13,15 +11,6 @@ interface CelebrationModalProps {
 
 export function CelebrationModal({ visible, celebration, onClose }: CelebrationModalProps) {
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
-  const language = useAuthStore((s) => s.language);
-  const themeColor = useAuthStore((s) => s.themeColor);
-  const currentTheme = themeColors[themeColor];
-
-  // 生成渐变色
-  const gradientColors: [string, string] = isDarkMode
-    ? [currentTheme.primary + 'CC', currentTheme.primary]
-    : [currentTheme.primary, currentTheme.primary + 'CC'];
-
   const cardScale = useRef(new Animated.Value(0.96)).current;
   const iconScale = useRef(new Animated.Value(0.92)).current;
   const iconRotate = useRef(new Animated.Value(0)).current;
@@ -91,7 +80,7 @@ export function CelebrationModal({ visible, celebration, onClose }: CelebrationM
             <View className="items-center">
               <Animated.View style={{ transform: [{ scale: iconScale }, { rotate }] }}>
                 <LinearGradient
-                  colors={gradientColors}
+                  colors={isDarkMode ? ['#059669', '#10B981'] : ['#10B981', '#34D399']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={{
@@ -109,11 +98,11 @@ export function CelebrationModal({ visible, celebration, onClose }: CelebrationM
               </Animated.View>
 
               <Text className="text-[20px] font-extrabold text-appText dark:text-appDarkText mt-4">
-                {t(language, 'home.energyTitle')}
+                太棒了
               </Text>
               <View className="mt-2 px-3 py-1.5 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
-                <Text className="text-[12px] font-extrabold" style={{ color: currentTheme.primary }}>
-                  +10 {t(language, 'common.points')}
+                <Text className="text-[12px] font-extrabold text-primary">
+                  +1 行动值
                 </Text>
               </View>
             </View>
@@ -124,7 +113,7 @@ export function CelebrationModal({ visible, celebration, onClose }: CelebrationM
                   <Text className="text-[18px]">✨</Text>
                 </View>
                 <Text className="text-[13px] font-extrabold text-appText dark:text-appDarkText">
-                  {t(language, 'stats.celebration')}
+                  记得庆祝
                 </Text>
               </View>
               <Text className="text-[14px] font-semibold text-appMuted dark:text-appDarkMuted mt-3">
@@ -133,7 +122,7 @@ export function CelebrationModal({ visible, celebration, onClose }: CelebrationM
             </View>
 
             <Text className="text-[12px] font-semibold text-center text-appMuted dark:text-appDarkMuted mt-4">
-              {t(language, 'home.energyLine')}
+              每一次小小的行动，都在让你变得更好
             </Text>
           </View>
         </Animated.View>
