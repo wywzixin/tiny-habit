@@ -6,11 +6,13 @@ import { useAuthStore } from '../../stores';
 import { useUserStats } from '../../services/api/hooks/useStats';
 import { useEffect, useRef, useState } from 'react';
 import { BottomSheet } from '../../components/ui/BottomSheet';
-import { getLocale, t } from '../../utils/i18n';
+import { t } from '../../utils/i18n';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { isDarkMode, toggleDarkMode, isLoggedIn, user, updateUser, language, setLanguage, notificationsEnabled, toggleNotifications } = useAuthStore();
+  const { primary, textMuted } = useTheme();
   const [showLanguageSheet, setShowLanguageSheet] = useState(false);
   
   // 获取最新的统计数据
@@ -50,12 +52,6 @@ export default function ProfileScreen() {
     router.replace('/auth/login');
   };
 
-  const todayLabel = new Date().toLocaleDateString(getLocale(language), {
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-  });
-
   const level = Math.max(1, Math.floor(totalPoints / 50) + 1);
   const levelLabel =
     level <= 1
@@ -66,6 +62,7 @@ export default function ProfileScreen() {
           ? t(language, 'profile.levelSkilled')
           : t(language, 'profile.levelMaster');
 
+  const iconColor = textMuted;
   const menuItems = [
     { icon: 'gift', label: t(language, 'profile.rewards'), route: '/rewards' },
     { icon: 'color-palette', label: t(language, 'profile.theme'), route: '/profile/theme' },
@@ -87,22 +84,19 @@ export default function ProfileScreen() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
       >
         <View className="pt-2 pb-4">
-          <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
-            {todayLabel}
-          </Text>
           <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
             {t(language, 'profile.title')}
           </Text>
 
           <View className="mt-4">
-            <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] p-5">
+            <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[18px] p-4">
               <View className="flex-row items-center justify-between">
                 <TouchableOpacity
                   onPress={() => isLoggedIn && router.push('/profile/user-info')}
                   activeOpacity={isLoggedIn ? 0.85 : 1}
                   className="flex-row items-center gap-3"
                 >
-                  <View className="w-14 h-14 rounded-[18px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center overflow-hidden">
+                  <View className="w-14 h-14 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center overflow-hidden">
                     {user?.avatarUrl ? (
                       <Image source={{ uri: user.avatarUrl }} className="w-full h-full" resizeMode="cover" />
                     ) : (
@@ -116,8 +110,8 @@ export default function ProfileScreen() {
                           {user?.username || t(language, 'profile.defaultUser')}
                         </Text>
                         <View className="flex-row items-center gap-2 mt-1">
-                          <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
-                            <Text className="text-appText dark:text-appDarkText text-[11px] font-bold">
+                          <View className="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
+                            <Text className="text-primary text-[11px] font-bold">
                               Lv.{level}
                             </Text>
                           </View>
@@ -134,7 +128,7 @@ export default function ProfileScreen() {
                         <TouchableOpacity
                           onPress={() => router.push('/auth/login')}
                           activeOpacity={0.9}
-                          className="mt-2 px-3 py-1.5 rounded-full bg-appText dark:bg-appDarkText self-start"
+                          className="mt-2 px-3 py-1.5 rounded-full bg-primary self-start"
                         >
                           <Text className="text-white dark:text-appText text-[12px] font-extrabold">
                             {t(language, 'auth.loginNow')}
@@ -144,12 +138,20 @@ export default function ProfileScreen() {
                     )}
                   </View>
                 </TouchableOpacity>
+                {isLoggedIn && (
+                  <View className="px-3 py-2 rounded-full bg-primary/10 border border-primary/20 flex-row items-center gap-1">
+                    <Ionicons name="flash" size={14} color={primary} />
+                    <Text className="text-[12px] font-bold" style={{ color: primary }}>
+                      {totalPoints}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           </View>
         </View>
 
-        <View className="bg-appCard dark:bg-appDarkCard rounded-[22px] border border-appBorder dark:border-appDarkBorder overflow-hidden">
+        <View className="bg-appCard dark:bg-appDarkCard rounded-[18px] border border-appBorder dark:border-appDarkBorder overflow-hidden">
           {menuItems.map((item, index) => {
             const enabled = Boolean(item.route || item.onPress);
             return (
@@ -171,8 +173,8 @@ export default function ProfileScreen() {
                 }`}
               >
                 <View className="flex-row items-center gap-3">
-                  <View className="w-10 h-10 rounded-2xl bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
-                    <Ionicons name={item.icon as any} size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+                  <View className="w-9 h-9 rounded-[14px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
+                    <Ionicons name={item.icon as any} size={18} color={iconColor} />
                   </View>
                   <Text className={`text-[14px] font-extrabold ${
                     enabled ? 'text-appText dark:text-appDarkText' : 'text-appMuted dark:text-appDarkMuted'
@@ -199,8 +201,8 @@ export default function ProfileScreen() {
 
           <View className="px-4 py-4 flex-row items-center justify-between border-t border-appBorder dark:border-appDarkBorder">
             <View className="flex-row items-center gap-3">
-              <View className="w-10 h-10 rounded-2xl bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
-                <Ionicons name="notifications" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+              <View className="w-9 h-9 rounded-[14px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
+                <Ionicons name="notifications" size={18} color={iconColor} />
               </View>
               <View>
                 <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">
@@ -211,15 +213,15 @@ export default function ProfileScreen() {
             <Switch
               value={notificationsEnabled}
               onValueChange={toggleNotifications}
-              trackColor={{ false: '#e7e5e4', true: '#10B981' }}
+              trackColor={{ false: '#e7e5e4', true: primary }}
               thumbColor="white"
             />
           </View>
 
           <View className="px-4 py-4 flex-row items-center justify-between border-t border-appBorder dark:border-appDarkBorder">
             <View className="flex-row items-center gap-3">
-              <View className="w-10 h-10 rounded-2xl bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
-                <Ionicons name="moon" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+              <View className="w-9 h-9 rounded-[14px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
+                <Ionicons name="moon" size={18} color={iconColor} />
               </View>
               <View>
                 <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'profile.darkMode')}</Text>
@@ -228,7 +230,7 @@ export default function ProfileScreen() {
             <Switch
               value={isDarkMode}
               onValueChange={toggleDarkMode}
-              trackColor={{ false: '#e7e5e4', true: '#10B981' }}
+              trackColor={{ false: '#e7e5e4', true: primary }}
               thumbColor="white"
             />
           </View>
@@ -248,26 +250,26 @@ export default function ProfileScreen() {
           <TouchableOpacity
             onPress={() => { setLanguage('zh'); setShowLanguageSheet(false); }}
             activeOpacity={0.85}
-            className="py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder flex-row items-center justify-between px-4"
+            className="py-4 rounded-[18px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder flex-row items-center justify-between px-4"
           >
             <Text className="text-appText dark:text-appDarkText font-extrabold">
               {t(language, 'profile.languageZh')}
             </Text>
             {language === 'zh' && (
-              <Ionicons name="checkmark" size={18} color="#10B981" />
+              <Ionicons name="checkmark" size={18} color={primary} />
             )}
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => { setLanguage('en'); setShowLanguageSheet(false); }}
             activeOpacity={0.85}
-            className="py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder flex-row items-center justify-between px-4"
+            className="py-4 rounded-[18px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder flex-row items-center justify-between px-4"
           >
             <Text className="text-appText dark:text-appDarkText font-extrabold">
               {t(language, 'profile.languageEn')}
             </Text>
             {language === 'en' && (
-              <Ionicons name="checkmark" size={18} color="#10B981" />
+              <Ionicons name="checkmark" size={18} color={primary} />
             )}
           </TouchableOpacity>
         </View>

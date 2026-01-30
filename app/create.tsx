@@ -4,12 +4,12 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useHabitStore, useAuthStore } from '../stores';
+import { themeColors } from '../stores/authStore';
 import { celebrations, weekDays } from '../constants';
 import { BottomSheet } from '../components/ui/BottomSheet';
-import { useCreateRecipe, useHabitLibrary, useDeleteHabit, useUpdateRecipe, useRecommendMicroBehaviors, useRecommendAnchors } from '../services/api/hooks';
+import { useCreateRecipe, useHabitLibrary, useDeleteHabit, useUpdateRecipe, useRecommendMicroBehaviors, useRecommendAnchors, useRecommendCombined } from '../services/api/hooks';
 import { RecommendedMicroBehavior, RecommendedAnchor } from '../services/api/ai';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../services/api/client';
@@ -246,6 +246,10 @@ export default function CreateScreen() {
   const user = useAuthStore((s) => s.user);
   const isDarkMode = useAuthStore((state) => state.isDarkMode);
   const language = useAuthStore((state) => state.language);
+  const themeColor = useAuthStore((state) => state.themeColor);
+  const currentTheme = themeColors[themeColor];
+  const accent = currentTheme.primary;
+  const accentSoft = currentTheme.primaryLight;
   const localSystemHabits = language === 'en' ? localSystemHabitsEn : localSystemHabitsZh;
   const aiRecommendations = language === 'en' ? aiRecommendationsEn : aiRecommendationsZh;
   
@@ -331,12 +335,7 @@ export default function CreateScreen() {
   // AI 推荐 mutations
   const recommendMicroBehaviorsMutation = useRecommendMicroBehaviors();
   const recommendAnchorsMutation = useRecommendAnchors();
-
-  const todayLabel = new Date().toLocaleDateString(getLocale(language), {
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-  });
+  const recommendCombinedMutation = useRecommendCombined();
 
   const formatTime = (date: Date) => {
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:00`;
@@ -404,6 +403,30 @@ export default function CreateScreen() {
   };
 
   const canCreate = behavior && anchor && celebration && frequency.length > 0;
+  const ensureAiAccess = () => {
+    if (!user?.id) {
+      Alert.alert(t(language, 'common.confirm'), t(language, 'auth.loginRequired'));
+      return false;
+    }
+    return true;
+  };
+
+  const getExcludeBehaviors = () => {
+    const names = aiMicroBehaviors
+      .map((item) => item.name || item.behavior)
+      .filter((value): value is string => Boolean(value));
+    return Array.from(new Set(names));
+  };
+
+  const getExcludeAnchors = () => {
+    const names = aiAnchors
+      .map((item) => item.anchor)
+      .filter((value): value is string => Boolean(value));
+    return Array.from(new Set(names));
+  };
+
+  const isAiBehaviorsLoading = recommendMicroBehaviorsMutation.isPending || recommendCombinedMutation.isPending;
+  const isAiAnchorsLoading = recommendAnchorsMutation.isPending || recommendCombinedMutation.isPending;
 
   // 处理习惯库数据
   const processedHabits = useMemo(() => {
@@ -464,16 +487,16 @@ export default function CreateScreen() {
 
   // AI 推荐微行为
   const handleAiRecommendBehaviors = async () => {
-    if (!goal.trim()) {
-      return;
-    }
-
+    if (!goal.trim()) return;
+    if (!ensureAiAccess()) return;
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const result = await recommendMicroBehaviorsMutation.mutateAsync({
         habitName: goal.trim(),
         habitCategory: undefined,
         userContext: undefined,
+        refresh: true,
+        excludeBehaviors: getExcludeBehaviors(),
       });
       console.log('=== AI 推荐微行为返回内容 ===');
       console.log(JSON.stringify(result, null, 2));
@@ -486,16 +509,16 @@ export default function CreateScreen() {
 
   // AI 推荐锚点
   const handleAiRecommendAnchors = async () => {
-    if (!goal.trim()) {
-      return;
-    }
-
+    if (!goal.trim()) return;
+    if (!ensureAiAccess()) return;
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const result = await recommendAnchorsMutation.mutateAsync({
         habitName: goal.trim(),
         timeOfDay: undefined,
-        userContext: undefined,
+        userContext: behavior ? `用户选择的微行为是"${behavior}"` : undefined,
+        refresh: true,
+        excludeAnchors: getExcludeAnchors(),
       });
       console.log('=== AI 推荐锚点返回内容 ===');
       console.log(JSON.stringify(result, null, 2));
@@ -509,54 +532,43 @@ export default function CreateScreen() {
   // 输入框失去焦点时触发 AI 推荐（同时请求微行为和锚点）
   const handleGoalBlur = async () => {
     const trimmedGoal = goal.trim();
-    if (trimmedGoal && trimmedGoal.length >= 2) {
-      // 同时触发微行为和锚点推荐
-      handleAiRecommendBehaviors();
-      handleAiRecommendAnchors();
+    if (!trimmedGoal || trimmedGoal.length < 2) return;
+    if (!user?.id) return;
+
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const result = await recommendCombinedMutation.mutateAsync({
+        habitName: trimmedGoal,
+        habitCategory: undefined,
+        timeOfDay: undefined,
+        userContext: undefined,
+        maxItems: 6,
+        refresh: false,
+      });
+      console.log('=== AI 合并推荐返回内容 ===');
+      console.log(JSON.stringify(result, null, 2));
+      setAiMicroBehaviors(result.micro_behaviors || []);
+      setAiAnchors(result.anchors || []);
+    } catch (error: any) {
+      console.error('AI 合并推荐失败:', error);
     }
   };
 
   // 选择 AI 推荐的微行为
   const selectAiMicroBehavior = (item: RecommendedMicroBehavior) => {
     setBehavior(item.name || item.behavior);
-    setSelectedIcon(item.icon);
-    setSelectedDifficulty(item.difficulty);
+    setSelectedIcon(item.icon || '✨');
+    setSelectedDifficulty(item.difficulty || 'easy');
     Haptics.selectionAsync();
 
-    // 选择微行为后，自动触发锚点推荐（传入微行为信息以获得更精准的推荐）
-    if (goal.trim()) {
-      console.log('=== 点击微行为，准备请求锚点接口 ===');
-      console.log('选择的微行为:', {
-        name: item.name,
-        behavior: item.behavior,
-        difficulty: item.difficulty,
-        icon: item.icon,
-        estimatedTime: item.estimatedTime,
-      });
-      console.log('传递给锚点接口的参数:', {
-        habitName: goal.trim(),
-        timeOfDay: undefined,
-        userContext: `用户选择的微行为是"${item.name}"（${item.behavior}），难度为${item.difficulty}`,
-      });
-      triggerAnchorRecommendWithBehavior(item);
-    }
-  };
-
-  // 根据选择的微行为推荐锚点
-  const triggerAnchorRecommendWithBehavior = async (selectedBehavior: RecommendedMicroBehavior) => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const result = await recommendAnchorsMutation.mutateAsync({
-        habitName: goal.trim(),
-        timeOfDay: undefined,
-        // 将微行为信息作为上下文传递给后端
-        userContext: `用户选择的微行为是"${selectedBehavior.name}"（${selectedBehavior.behavior}），难度为${selectedBehavior.difficulty}`,
-      });
-      console.log('=== AI 推荐锚点返回内容（基于微行为）===');
-      console.log(JSON.stringify(result, null, 2));
-      setAiAnchors(result);
-    } catch (error: any) {
-      console.error('AI 推荐锚点失败:', error);
+    if (aiAnchors.length === 0 && item.anchor_suggestions && item.anchor_suggestions.length > 0) {
+      const suggestions = item.anchor_suggestions.map((anchorText) => ({
+        anchor: anchorText,
+        description: '',
+        timeOfDay: '',
+        icon: '✨',
+      }));
+      setAiAnchors(suggestions);
     }
   };
 
@@ -749,16 +761,13 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
           <TouchableOpacity
             onPress={() => router.back()}
             activeOpacity={0.85}
-            className="px-3 py-2 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder"
+            className="px-3 py-2 rounded-full border border-appBorder dark:border-appDarkBorder"
           >
             <Text className="text-appMuted dark:text-appDarkMuted text-[12px] font-bold">{t(language, 'common.cancel')}</Text>
           </TouchableOpacity>
 
           <View className="items-center">
-            <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
-              {todayLabel}
-            </Text>
-            <Text className="text-base font-extrabold text-appText dark:text-appDarkText mt-0.5">
+            <Text className="text-[16px] font-extrabold text-appText dark:text-appDarkText">
               {editingId ? t(language, 'create.editTitle') : t(language, 'create.newTitle')}
             </Text>
           </View>
@@ -798,7 +807,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
           <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">
             {t(language, 'create.goalHint')}
           </Text>
-          <View className="bg-appCard dark:bg-appDarkCard px-4 py-3 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
+          <View className="bg-appCard dark:bg-appDarkCard px-4 py-3 rounded-[18px] border border-appBorder dark:border-appDarkBorder">
             <View className="flex-row items-center">
               <Ionicons name="search" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
             <TextInput
@@ -812,10 +821,16 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
             <TouchableOpacity
               onPress={() => setShowLibrary(true)}
               activeOpacity={0.85}
-              className="px-3 py-2 bg-appText dark:bg-appDarkText rounded-2xl flex-row items-center"
+              className="px-3 py-2 rounded-full flex-row items-center border"
+              style={{
+                borderColor: accent + '40',
+                backgroundColor: isDarkMode ? accent + '22' : accentSoft,
+              }}
             >
-              <Ionicons name="book-outline" size={14} color={isDarkMode ? '#0c0a09' : 'white'} />
-              <Text className="text-xs font-bold text-white dark:text-appText ml-1">{t(language, 'create.library')}</Text>
+              <Ionicons name="book-outline" size={14} color={accent} />
+              <Text className="text-xs font-bold ml-1" style={{ color: accent }}>
+                {t(language, 'create.library')}
+              </Text>
             </TouchableOpacity>
             </View>
           </View>
@@ -827,35 +842,36 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
             <Text className="text-lg font-extrabold text-appText dark:text-appDarkText">{t(language, 'create.behaviorTitle')}</Text>
             <TouchableOpacity
               onPress={handleAiRecommendBehaviors}
-              disabled={recommendMicroBehaviorsMutation.isPending}
+              disabled={isAiBehaviorsLoading}
               activeOpacity={0.85}
-              style={{ opacity: recommendMicroBehaviorsMutation.isPending ? 0.6 : 1 }}
+              style={{ opacity: isAiBehaviorsLoading ? 0.6 : 1 }}
             >
-              <LinearGradient
-                colors={['#8B5CF6', '#EC4899']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+              <View
+                className="flex-row items-center px-3 py-1.5 rounded-full border"
+                style={{
+                  borderColor: accent + '35',
+                  backgroundColor: isDarkMode ? accent + '1F' : accentSoft,
+                }}
               >
-                <Ionicons name="sparkles" size={12} color="white" />
-                <Text className="text-[11px] font-bold text-white">
+                <Ionicons name="sparkles" size={12} color={accent} />
+                <Text className="text-[11px] font-bold ml-1" style={{ color: accent }}>
                   {t(language, 'create.aiRecommend')}
                 </Text>
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           </View>
           <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">{t(language, 'create.behaviorHint')}</Text>
 
           {/* AI 推荐的微行为列表 */}
-          {recommendMicroBehaviorsMutation.isPending ? (
-            <View className="p-6 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center mb-3">
+          {isAiBehaviorsLoading ? (
+            <View className="p-4 rounded-[18px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center mb-3">
               <View className="flex-row items-center gap-2">
-                <Ionicons name="sparkles" size={18} color="#8B5CF6" />
-                <Text className="text-[14px] font-bold text-appMuted dark:text-appDarkMuted">
+                <Ionicons name="sparkles" size={14} color={accent} />
+                <Text className="text-[13px] font-bold text-appMuted dark:text-appDarkMuted">
                   {t(language, 'create.aiThinking')}
                 </Text>
               </View>
-              <Text className="text-[12px] font-medium text-appMuted dark:text-appDarkMuted mt-2">
+              <Text className="text-[11px] font-medium text-appMuted dark:text-appDarkMuted mt-1.5">
                 {t(language, 'create.aiGenerating')}
               </Text>
             </View>
@@ -875,32 +891,32 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                     key={index}
                     onPress={() => selectAiMicroBehavior(item)}
                     activeOpacity={0.88}
-                    className={`p-4 rounded-[22px] border ${
+                    className={`p-3 rounded-[18px] border ${
                       isSelected
                         ? 'bg-primary/10 dark:bg-primary/15 border-primary/25 dark:border-primary/30'
                         : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
                     }`}
                   >
                     <View className="flex-row items-center">
-                      <View className="w-12 h-12 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
-                        <Text className="text-[22px]">{item.icon}</Text>
+                      <View className="w-10 h-10 rounded-[14px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
+                        <Text className="text-[20px]">{item.icon || '✨'}</Text>
                       </View>
                       <View className="flex-1">
                         <View className="flex-row items-center gap-2 flex-wrap">
-                          <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText">{item.name}</Text>
+                          <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">{item.name}</Text>
                           <View className={`px-2 py-0.5 rounded-full ${difficultyStyle.bg}`}>
                             <Text className="text-[10px] font-bold text-white">
                               {difficultyStyle.text}{item.estimatedTime ? ` · ${item.estimatedTime}内完成` : ''}
                             </Text>
                           </View>
                         </View>
-                        <Text className="text-[12px] font-medium text-appMuted dark:text-appDarkMuted mt-1.5" numberOfLines={2}>
+                        <Text className="text-[11px] font-medium text-appMuted dark:text-appDarkMuted mt-1" numberOfLines={2}>
                           {item.description}
                         </Text>
                       </View>
                       {isSelected && (
-                        <View className="w-9 h-9 rounded-full bg-primary items-center justify-center ml-2">
-                          <Ionicons name="checkmark" size={18} color="white" />
+                        <View className="w-7 h-7 rounded-full bg-primary items-center justify-center ml-2">
+                          <Ionicons name="checkmark" size={14} color="white" />
                         </View>
                       )}
                     </View>
@@ -910,8 +926,8 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
               </View>
             </ScrollView>
           ) : (
-            <View className="p-6 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center mb-3">
-              <Text className="text-[14px] font-semibold text-appMuted dark:text-appDarkMuted text-center">
+            <View className="p-4 rounded-[18px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center mb-3">
+              <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted text-center">
                 {t(language, 'create.inputHabitForAi')}
               </Text>
             </View>
@@ -920,7 +936,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
             value={behavior}
             onChangeText={setBehavior}
             placeholder={t(language, 'create.behaviorPlaceholder')}
-            className="bg-appCard dark:bg-appDarkCard px-4 py-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder text-[14px] font-semibold text-appText dark:text-appDarkText"
+            className="bg-appCard dark:bg-appDarkCard px-4 py-3 rounded-[18px] border border-appBorder dark:border-appDarkBorder text-[14px] font-semibold text-appText dark:text-appDarkText"
             placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
           />
         </View>
@@ -931,35 +947,36 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
             <Text className="text-lg font-extrabold text-appText dark:text-appDarkText">{t(language, 'create.anchorTitle')}</Text>
             <TouchableOpacity
               onPress={handleAiRecommendAnchors}
-              disabled={recommendAnchorsMutation.isPending}
+              disabled={isAiAnchorsLoading}
               activeOpacity={0.85}
-              style={{ opacity: recommendAnchorsMutation.isPending ? 0.6 : 1 }}
+              style={{ opacity: isAiAnchorsLoading ? 0.6 : 1 }}
             >
-              <LinearGradient
-                colors={['#8B5CF6', '#EC4899']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+              <View
+                className="flex-row items-center px-3 py-1.5 rounded-full border"
+                style={{
+                  borderColor: accent + '35',
+                  backgroundColor: isDarkMode ? accent + '1F' : accentSoft,
+                }}
               >
-                <Ionicons name="sparkles" size={12} color="white" />
-                <Text className="text-[11px] font-bold text-white">
+                <Ionicons name="sparkles" size={12} color={accent} />
+                <Text className="text-[11px] font-bold ml-1" style={{ color: accent }}>
                   {t(language, 'create.aiRecommend')}
                 </Text>
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           </View>
           <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">{t(language, 'create.anchorHint')}</Text>
 
           {/* AI 推荐的锚点列表 */}
-          {recommendAnchorsMutation.isPending ? (
-            <View className="p-6 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center mb-3">
+          {isAiAnchorsLoading ? (
+            <View className="p-4 rounded-[18px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center mb-3">
               <View className="flex-row items-center gap-2">
-                <Ionicons name="sparkles" size={18} color="#8B5CF6" />
-                <Text className="text-[14px] font-bold text-appMuted dark:text-appDarkMuted">
+                <Ionicons name="sparkles" size={14} color={accent} />
+                <Text className="text-[13px] font-bold text-appMuted dark:text-appDarkMuted">
                   {t(language, 'create.aiThinking')}
                 </Text>
               </View>
-              <Text className="text-[12px] font-medium text-appMuted dark:text-appDarkMuted mt-2">
+              <Text className="text-[11px] font-medium text-appMuted dark:text-appDarkMuted mt-1.5">
                 {t(language, 'create.aiGenerating')}
               </Text>
             </View>
@@ -978,30 +995,30 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                     key={index}
                     onPress={() => selectAiAnchor(item)}
                     activeOpacity={0.88}
-                    className={`p-4 rounded-[22px] border ${
+                    className={`p-3 rounded-[18px] border ${
                       isSelected
                         ? 'bg-primary/10 dark:bg-primary/15 border-primary/25 dark:border-primary/30'
                         : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
                     }`}
                   >
                     <View className="flex-row items-center">
-                      <View className="w-12 h-12 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
-                        <Text className="text-[22px]">{item.icon}</Text>
+                      <View className="w-10 h-10 rounded-[14px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
+                        <Text className="text-[20px]">{item.icon || '✨'}</Text>
                       </View>
                       <View className="flex-1">
                         <View className="flex-row items-center gap-2">
-                          <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText">{item.anchor}</Text>
-                          <View className="px-2 py-0.5 rounded-full bg-blue-500">
-                            <Text className="text-[10px] font-bold text-white">{item.timeOfDay}</Text>
+                          <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">{item.anchor}</Text>
+                          <View className="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                            <Text className="text-[10px] font-bold text-primary">{item.timeOfDay || t(language, 'common.optional')}</Text>
                           </View>
                         </View>
                         <Text className="text-[11px] font-medium text-appMuted dark:text-appDarkMuted mt-1" numberOfLines={2}>
-                          {item.description}
+                          {item.description || t(language, 'common.optional')}
                         </Text>
                       </View>
                       {isSelected && (
-                        <View className="w-9 h-9 rounded-full bg-primary items-center justify-center ml-2">
-                          <Ionicons name="checkmark" size={18} color="white" />
+                        <View className="w-7 h-7 rounded-full bg-primary items-center justify-center ml-2">
+                          <Ionicons name="checkmark" size={14} color="white" />
                         </View>
                       )}
                     </View>
@@ -1011,9 +1028,9 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
               </View>
             </ScrollView>
           ) : (
-            <View className="p-6 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center mb-3">
-              <Text className="text-[14px] font-semibold text-appMuted dark:text-appDarkMuted text-center">
-                {behavior ? t(language, 'create.aiGenerating') : t(language, 'create.selectBehaviorFirst')}
+            <View className="p-4 rounded-[18px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center mb-3">
+              <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted text-center">
+                {goal ? t(language, 'create.aiGenerating') : t(language, 'create.inputHabitForAi')}
               </Text>
             </View>
           )}
@@ -1021,7 +1038,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
             value={anchor}
             onChangeText={setAnchor}
             placeholder={t(language, 'create.anchorPlaceholder')}
-            className="bg-appCard dark:bg-appDarkCard px-4 py-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder text-[14px] font-semibold text-appText dark:text-appDarkText"
+            className="bg-appCard dark:bg-appDarkCard px-4 py-3 rounded-[18px] border border-appBorder dark:border-appDarkBorder text-[14px] font-semibold text-appText dark:text-appDarkText"
             placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
           />
         </View>
@@ -1036,7 +1053,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                 key={item.id}
                 onPress={() => { setCelebration(item.text); Haptics.selectionAsync(); }}
                 activeOpacity={0.88}
-                className={`p-3 rounded-[20px] border items-center w-[31%] ${
+                className={`p-3 rounded-[18px] border items-center w-[31%] ${
                   celebration === item.text
                     ? 'bg-primary/10 dark:bg-primary/15 border-primary/25 dark:border-primary/30'
                     : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
@@ -1053,28 +1070,30 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
         <View className="mb-8">
           <Text className="text-lg font-extrabold text-appText dark:text-appDarkText mb-1">{t(language, 'create.frequencyTitle')}</Text>
           <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">{t(language, 'create.frequencyHint')}</Text>
-          <View className="flex-row justify-between mb-1">
-            {weekDays.map((day, index) => {
+          <View className="bg-appCard dark:bg-appDarkCard p-3 rounded-[18px] border border-appBorder dark:border-appDarkBorder">
+            <View className="flex-row justify-between">
+              {weekDays.map((day, index) => {
               const backendDay = index + 1; // UI 索引 0-6 对应后端 1-7
               return (
                 <TouchableOpacity
                   key={index}
                   onPress={() => toggleDay(index)}
-                  activeOpacity={0.85}
-                  className={`w-10 h-10 rounded-full items-center justify-center border ${
+                  activeOpacity={0.9}
+                  className={`w-9 h-9 rounded-full items-center justify-center border ${
                     frequency.includes(backendDay)
-                      ? 'bg-appText dark:bg-appDarkText border-appText dark:border-appDarkText'
-                      : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
+                      ? 'bg-primary/15 border-primary/30'
+                      : 'bg-appBg dark:bg-appDarkBg border-appBorder dark:border-appDarkBorder'
                   }`}
                 >
                   <Text className={`text-sm font-extrabold ${
-                    frequency.includes(backendDay) ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
+                    frequency.includes(backendDay) ? 'text-primary' : 'text-appMuted dark:text-appDarkMuted'
                   }`}>
                     {day}
                   </Text>
                 </TouchableOpacity>
               );
             })}
+            </View>
           </View>
         </View>
 
@@ -1082,31 +1101,35 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
         <View className="mb-8">
           <Text className="text-lg font-extrabold text-appText dark:text-appDarkText mb-1">{t(language, 'create.reminderTitle')}</Text>
           <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">{t(language, 'create.reminderHint')}</Text>
-          <View className="bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
-            <View className="flex-row items-center justify-between">
-              <View>
-                <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'create.reminderSwitch')}</Text>
-                <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-1">
-                  {t(language, 'create.reminderNote')}
-                </Text>
+          <View className="bg-appCard dark:bg-appDarkCard p-4 rounded-[18px] border border-appBorder dark:border-appDarkBorder">
+            <View className="bg-appBg dark:bg-appDarkBg px-3 py-2 rounded-[14px] border border-appBorder dark:border-appDarkBorder">
+              <View className="flex-row items-center justify-between">
+                <View>
+                  <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'create.reminderSwitch')}</Text>
+                  <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-1">
+                    {t(language, 'create.reminderNote')}
+                  </Text>
+                </View>
+                <Switch
+                  value={reminderEnabled}
+                  onValueChange={setReminderEnabled}
+                  trackColor={{ false: '#e7e5e4', true: accent }}
+                  thumbColor="white"
+                />
               </View>
-              <Switch
-                value={reminderEnabled}
-                onValueChange={setReminderEnabled}
-                trackColor={{ false: '#e7e5e4', true: '#10B981' }}
-                thumbColor="white"
-              />
             </View>
             {reminderEnabled && (
-              <View className="mt-4 pt-4 border-t border-appBorder dark:border-appDarkBorder">
+              <View className="mt-3">
                 <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mb-2">{t(language, 'create.reminderTime')}</Text>
                 <TouchableOpacity
                   onPress={() => setShowTimePicker(true)}
                   activeOpacity={0.85}
-                  className="bg-appBg dark:bg-appDarkBg px-4 py-3 rounded-2xl flex-row items-center justify-between border border-appBorder dark:border-appDarkBorder"
+                  className="bg-appBg dark:bg-appDarkBg px-4 py-2.5 rounded-[18px] flex-row items-center justify-between border border-appBorder dark:border-appDarkBorder"
                 >
                   <View className="flex-row items-center gap-2">
-                    <Ionicons name="time-outline" size={18} color="#10B981" />
+                    <View className="w-8 h-8 rounded-full items-center justify-center bg-primary/10 border border-primary/15">
+                      <Ionicons name="time-outline" size={16} color={accent} />
+                    </View>
                     <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText">
                       {formatTime(reminderTime)}
                     </Text>
@@ -1121,7 +1144,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
 
       {/* Bottom Preview & Button */}
       <View className="absolute bottom-0 left-0 right-0 bg-appBg dark:bg-appDarkBg border-t border-appBorder dark:border-appDarkBorder px-5 pt-3 pb-8">
-        <View className="bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder mb-3">
+        <View className="bg-appCard dark:bg-appDarkCard p-4 rounded-[18px] border border-appBorder dark:border-appDarkBorder mb-3">
           <View className="flex-row items-center justify-between mb-2">
             <Text className="text-[11px] font-extrabold text-appMuted dark:text-appDarkMuted">{t(language, 'create.previewTitle')}</Text>
             <View className="flex-row items-center gap-1.5">
@@ -1144,7 +1167,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
           onPress={handleSubmit}
           disabled={!canCreate}
           activeOpacity={0.9}
-          className={`py-4 rounded-[22px] items-center ${
+          className={`py-4 rounded-[18px] items-center ${
             canCreate ? 'bg-appText dark:bg-appDarkText' : 'bg-appBorder dark:bg-appDarkBorder'
           }`}
         >
@@ -1173,7 +1196,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
         <View className="px-4 pb-4">
           {/* 顶部搜索栏和编辑按钮 */}
           <View className="flex-row items-center gap-2 mt-2">
-            <View className="flex-1 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder px-4 py-3 flex-row items-center">
+            <View className="flex-1 rounded-[18px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder px-4 py-3 flex-row items-center">
               <Ionicons name="search" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
               <TextInput
                 value={librarySearch}
@@ -1202,14 +1225,14 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                   Haptics.selectionAsync();
                 }}
                 activeOpacity={0.85}
-                className={`px-4 py-3 rounded-[22px] border ${
+                className={`px-4 py-3 rounded-[18px] border ${
                   isEditMode
-                    ? 'bg-primary border-primary'
+                    ? 'bg-primary/10 border-primary/30'
                     : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
                 }`}
               >
                 <Text className={`text-[14px] font-bold ${
-                  isEditMode ? 'text-white' : 'text-appText dark:text-appDarkText'
+                  isEditMode ? 'text-primary' : 'text-appText dark:text-appDarkText'
                 }`}>
                   {isEditMode ? t(language, 'common.done') : t(language, 'common.edit')}
                 </Text>
@@ -1228,13 +1251,13 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                     activeOpacity={0.85}
                     className={`px-4 py-2 rounded-full border ${
                       active
-                        ? 'bg-appText dark:bg-appDarkText border-appText dark:border-appDarkText'
+                        ? 'bg-primary/10 border-primary/25'
                         : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
                     }`}
                   >
                     <Text
                       className={`text-xs font-bold ${
-                        active ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
+                        active ? 'text-primary' : 'text-appMuted dark:text-appDarkMuted'
                       }`}
                     >
                       {t(language, `create.category.${cat}`)}
@@ -1253,7 +1276,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                   ? t(language, 'create.libraryAll')
                   : t(language, 'create.libraryRecommended')}
             </Text>
-            <View className="px-3 py-1.5 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder">
+            <View className="px-3 py-1.5 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
               <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
                 {processedHabits.length} {t(language, 'common.items')}
               </Text>
@@ -1269,7 +1292,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
         >
           <View className="gap-3">
             {processedHabits.length === 0 ? (
-              <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] p-8 items-center">
+              <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[18px] p-8 items-center">
                 <Text className="text-4xl mb-3">🔎</Text>
                 <Text className="text-sm font-extrabold text-appText dark:text-appDarkText">
                   {t(language, 'create.noHabitFound')}
@@ -1303,25 +1326,25 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                       }
                     }}
                     activeOpacity={isEditMode ? 1 : 0.92}
-                    className={`p-4 rounded-[22px] border flex-row items-center ${
+                    className={`p-4 rounded-[18px] border flex-row items-center ${
                       selected && !isEditMode
                         ? 'bg-primary/10 dark:bg-primary/15 border-primary/25 dark:border-primary/30'
                         : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
                     } ${isEditMode && !isUserHabit ? 'opacity-50' : ''}`}
                   >
                     <View
-                      className="w-12 h-12 rounded-[16px] items-center justify-center mr-3 border border-appBorder dark:border-appDarkBorder"
+                      className="w-11 h-11 rounded-[14px] items-center justify-center mr-3 border border-appBorder dark:border-appDarkBorder"
                       style={{ backgroundColor: getIconBg(habit.category) }}
                     >
                       <Text className="text-[22px]">{habit.icon}</Text>
                     </View>
                     <View className="flex-1">
                       <View className="flex-row items-center gap-2">
-                        <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText">
+                        <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">
                           {habit.name}
                         </Text>
-                        <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
-                          <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
+                        <View className="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/15">
+                          <Text className="text-[11px] font-bold text-primary">
                             {t(language, `create.category.${habit.category}`)}
                           </Text>
                         </View>
@@ -1348,15 +1371,15 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                       ) : (
                         /* 正常模式：显示添加/选中按钮 */
                         !isEditMode && (
-                          <View className={`w-10 h-10 rounded-full items-center justify-center border ${
+                          <View className={`w-9 h-9 rounded-full items-center justify-center border ${
                             selected
                               ? 'bg-primary border-primary'
-                              : 'bg-appBg dark:bg-appDarkBg border-appBorder dark:border-appDarkBorder'
+                              : 'bg-primary/10 border-primary/20'
                           }`}>
                             <Ionicons
                               name={selected ? 'checkmark' : 'add'}
                               size={20}
-                              color={selected ? 'white' : (isDarkMode ? '#d6d3d1' : '#78716c')}
+                              color={selected ? 'white' : accent}
                             />
                           </View>
                         )

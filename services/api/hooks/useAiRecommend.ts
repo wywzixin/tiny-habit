@@ -24,3 +24,15 @@ export const useRecommendAnchors = () => {
     },
   });
 };
+
+/**
+ * AI 合并推荐（微行为 + 锚点）
+ */
+export const useRecommendCombined = () => {
+  return useMutation({
+    mutationFn: aiApi.recommendCombined,
+    onError: (error: any) => {
+      console.error('AI 合并推荐失败:', error);
+    },
+  });
+};

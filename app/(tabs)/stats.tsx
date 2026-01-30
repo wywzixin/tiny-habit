@@ -5,13 +5,13 @@ import { useAuthStore, useHabitStore } from '../../stores';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useUserStats, useTodayCheckIns as useTodayStatsCheckIns } from '../../services/api/hooks/useStats';
 import { useMemo } from 'react';
-import { getLocale, t } from '../../utils/i18n';
+import { t } from '../../utils/i18n';
 import { useTheme } from '../../hooks/useTheme';
 
 export default function StatsScreen() {
   const user = useAuthStore((s) => s.user);
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
-  const { primary } = useTheme();
+  const { primary, primaryLight } = useTheme();
   const { microBehaviors, checkIns } = useHabitStore();
 
   // 已登录：从后端 API 获取统计数据
@@ -126,18 +126,12 @@ export default function StatsScreen() {
   }
 
   const language = useAuthStore((s) => s.language);
-  const todayLabel = new Date().toLocaleDateString(getLocale(language), {
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-  });
-
   // 加载状态
   if (user?.id && (isLoadingStats || isLoadingTodayCheckIns)) {
     return (
       <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg">
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#10B981" />
+          <ActivityIndicator size="large" color={primary} />
           <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mt-4">
             {t(language, 'stats.loading')}
           </Text>
@@ -154,20 +148,18 @@ export default function StatsScreen() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
       >
         <View className="pt-2 pb-4">
-          <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
-            {todayLabel}
-          </Text>
           <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
             {t(language, 'common.stats')}
           </Text>
 
           <View className="mt-4">
-            <LinearGradient
-              colors={isDarkMode ? ['#059669', '#10B981'] : ['#10B981', '#34D399']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ borderRadius: 22, padding: 16 }}
-            >
+            <View className="rounded-[20px] overflow-hidden border border-appBorder dark:border-appDarkBorder">
+              <LinearGradient
+                colors={[primary, primaryLight]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ padding: 16 }}
+              >
               <View className="flex-row items-center justify-between">
                 <View>
                   <Text className="text-white/90 text-[11px] font-bold">{t(language, 'stats.totalPoints')}</Text>
@@ -176,30 +168,43 @@ export default function StatsScreen() {
                       {statsData.totalPoints}
                     </Text>
                     {user?.id && (
-                      <Text className="text-white/70 text-sm font-bold mb-1.5">
-                        Lv.{statsData.level}
-                      </Text>
+                      <View className="px-2 py-0.5 rounded-full bg-white/15 border border-white/25 mb-1.5">
+                        <Text className="text-white/80 text-[11px] font-bold">
+                          Lv.{statsData.level}
+                        </Text>
+                      </View>
                     )}
                   </View>
                 </View>
-                <View className="w-12 h-12 rounded-2xl bg-white/18 items-center justify-center">
-                  <Text className="text-2xl">✨</Text>
+                <View className="w-11 h-11 rounded-2xl bg-white/18 border border-white/25 items-center justify-center">
+                  <Ionicons name="sparkles" size={20} color="white" />
                 </View>
               </View>
             </LinearGradient>
+            </View>
           </View>
         </View>
 
         <View className="flex-row gap-3 mb-5">
-          <View className="flex-1 bg-appCard dark:bg-appDarkCard p-5 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
-            <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mb-1">{t(language, 'stats.habitCount')}</Text>
-            <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">
+          <View className="flex-1 bg-appCard dark:bg-appDarkCard p-4 rounded-[18px] border border-appBorder dark:border-appDarkBorder">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">{t(language, 'stats.habitCount')}</Text>
+              <View className="w-8 h-8 rounded-full bg-primary/10 border border-primary/15 items-center justify-center">
+                <Ionicons name="leaf-outline" size={16} color={primary} />
+              </View>
+            </View>
+            <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-2">
               {statsData.microBehaviorCount}
             </Text>
           </View>
-          <View className="flex-1 bg-appCard dark:bg-appDarkCard p-5 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
-            <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mb-1">{t(language, 'stats.checkInCount')}</Text>
-            <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">
+          <View className="flex-1 bg-appCard dark:bg-appDarkCard p-4 rounded-[18px] border border-appBorder dark:border-appDarkBorder">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">{t(language, 'stats.checkInCount')}</Text>
+              <View className="w-8 h-8 rounded-full bg-primary/10 border border-primary/15 items-center justify-center">
+                <Ionicons name="checkmark-done-outline" size={16} color={primary} />
+              </View>
+            </View>
+            <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-2">
               {statsData.checkInCount}
             </Text>
           </View>
@@ -212,27 +217,29 @@ export default function StatsScreen() {
                 {t(language, 'stats.moments')}
               </Text>
             </View>
-            <View className="flex-row items-center gap-1.5">
-              <Ionicons name="star" size={16} color={isDarkMode ? '#a8a29e' : '#78716c'} />
-              <Text className="text-[12px] font-extrabold text-appMuted dark:text-appDarkMuted">
+            <View className="flex-row items-center gap-1 px-2 py-1 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder">
+              <Ionicons name="star" size={14} color={primary} />
+              <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
                 {todayMomentsData.length}
               </Text>
             </View>
           </View>
 
           {todayMomentsData.length === 0 ? (
-            <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
-              <Text className="text-4xl mb-3">🌤️</Text>
+            <View className="bg-appCard dark:bg-appDarkCard p-6 rounded-[18px] border border-appBorder dark:border-appDarkBorder items-center">
+              <View className="w-12 h-12 rounded-full bg-primary/10 border border-primary/15 items-center justify-center mb-3">
+                <Text className="text-2xl">🌤️</Text>
+              </View>
               <Text className="text-sm font-extrabold text-appText dark:text-appDarkText">
                 {t(language, 'stats.noMoments')}
               </Text>
-              <Text className="text-xs font-semibold text-appMuted dark:text-appDarkMuted mt-2 text-center leading-relaxed">
+              <Text className="text-xs font-semibold text-appMuted dark:text-appDarkMuted mt-1.5 text-center leading-relaxed">
                 {t(language, 'stats.noMomentsHint')}
               </Text>
             </View>
           ) : (
             <View className="relative">
-              <View className="absolute left-[10px] top-3 bottom-3 w-0.5 bg-appBorder dark:bg-appDarkBorder" />
+              <View className="absolute left-[10px] top-3 bottom-3 w-px bg-appBorder dark:bg-appDarkBorder" />
               <View className="gap-3">
                 {todayMomentsData.map((moment, index) => {
                   console.log(`===== 渲染第 ${index} 条 =====`);
@@ -249,27 +256,27 @@ export default function StatsScreen() {
                   return (
                     <View key={`${moment.checkedAt}-${index}`} className="flex-row gap-3">
                       <View className="w-5 items-center">
-                        <View className="w-3.5 h-3.5 rounded-full mt-3 z-10" style={{ backgroundColor: primary }} />
+                        <View className="w-3 h-3 rounded-full mt-3 z-10" style={{ backgroundColor: primary }} />
                       </View>
-                      <View className="flex-1 bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
+                      <View className="flex-1 bg-appCard dark:bg-appDarkCard p-4 rounded-[18px] border border-appBorder dark:border-appDarkBorder">
                         <View className="flex-row items-start gap-3">
-                          <View className="w-12 h-12 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
-                            <Text className="text-[22px]">{moment.icon || '❓'}</Text>
+                          <View className="w-10 h-10 rounded-[14px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
+                            <Text className="text-[20px]">{moment.icon || '❓'}</Text>
                           </View>
                           <View className="flex-1">
                             <View className="flex-row items-center justify-between">
-                            <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText" numberOfLines={1}>
+                            <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText" numberOfLines={1}>
                               {moment.behavior || t(language, 'stats.noBehavior')}
                             </Text>
                               <View className="flex-row items-center gap-1">
-                                <Ionicons name="time-outline" size={14} color={isDarkMode ? '#a8a29e' : '#78716c'} />
-                                <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted">
+                                <Ionicons name="time-outline" size={13} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+                                <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
                                   {timeText}
                                 </Text>
                               </View>
                             </View>
 
-                            <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-3">
+                            <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-2">
                               {t(language, 'stats.celebration')}：
                               <Text className="font-extrabold" style={{ color: primary }}>
                                 {moment.celebration || t(language, 'stats.noCelebration')}
@@ -289,24 +296,30 @@ export default function StatsScreen() {
         <View className="mb-2">
           <Text className="text-base font-extrabold text-appText dark:text-appDarkText mb-3">{t(language, 'stats.badges')}</Text>
           <View className="flex-row gap-3">
-            <View className={`flex-1 bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center ${statsData.checkInCount >= 1 ? '' : 'opacity-60'}`}>
-              <Text className="text-2xl mb-2">🌱</Text>
+            <View className={`flex-1 bg-appCard dark:bg-appDarkCard p-4 rounded-[18px] border border-appBorder dark:border-appDarkBorder items-center ${statsData.checkInCount >= 1 ? '' : 'opacity-60'}`}>
+              <View className="w-10 h-10 rounded-full bg-primary/10 border border-primary/15 items-center justify-center mb-2">
+                <Text className="text-[20px]">🌱</Text>
+              </View>
               <Text className="text-[12px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'stats.badgeSeed')}</Text>
               <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mt-1">
                 {statsData.checkInCount >= 1 ? t(language, 'stats.unlocked') : t(language, 'stats.unlockOnce')}
               </Text>
             </View>
             
-            <View className={`flex-1 bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center ${statsData.checkInCount >= 10 ? '' : 'opacity-60'}`}>
-              <Text className="text-2xl mb-2">🌳</Text>
+            <View className={`flex-1 bg-appCard dark:bg-appDarkCard p-4 rounded-[18px] border border-appBorder dark:border-appDarkBorder items-center ${statsData.checkInCount >= 10 ? '' : 'opacity-60'}`}>
+              <View className="w-10 h-10 rounded-full bg-primary/10 border border-primary/15 items-center justify-center mb-2">
+                <Text className="text-[20px]">🌳</Text>
+              </View>
               <Text className="text-[12px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'stats.badgeGrowth')}</Text>
               <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mt-1">
                 {statsData.checkInCount >= 10 ? t(language, 'stats.unlocked') : `${statsData.checkInCount}/10`}
               </Text>
             </View>
             
-            <View className={`flex-1 bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center ${statsData.checkInCount >= 50 ? '' : 'opacity-60'}`}>
-              <Text className="text-2xl mb-2">💎</Text>
+            <View className={`flex-1 bg-appCard dark:bg-appDarkCard p-4 rounded-[18px] border border-appBorder dark:border-appDarkBorder items-center ${statsData.checkInCount >= 50 ? '' : 'opacity-60'}`}>
+              <View className="w-10 h-10 rounded-full bg-primary/10 border border-primary/15 items-center justify-center mb-2">
+                <Text className="text-[20px]">💎</Text>
+              </View>
               <Text className="text-[12px] font-extrabold text-appText dark:text-appDarkText">{t(language, 'stats.badgeMaster')}</Text>
               <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted mt-1">
                 {statsData.checkInCount >= 50 ? t(language, 'stats.unlocked') : `${statsData.checkInCount}/50`}

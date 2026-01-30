@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../stores';
+import { useTheme } from '../../hooks/useTheme';
 import { resetPassword as resetPasswordApi } from '../../services/api';
 import { useState as useReactState } from 'react';
 
@@ -19,6 +20,7 @@ function isValidPhone(value: string) {
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
+  const { primary } = useTheme();
 
   const [identifier, setIdentifier] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -84,16 +86,16 @@ export default function ForgotPasswordScreen() {
             <TouchableOpacity
               onPress={() => router.back()}
               activeOpacity={0.85}
-              className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
+              className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 items-center justify-center"
             >
-              <Ionicons name="close" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+              <Ionicons name="close" size={18} color={primary} />
             </TouchableOpacity>
           </View>
         </View>
 
         <View className="gap-3">
-          <View className="bg-appCard dark:bg-appDarkCard rounded-[22px] border border-appBorder dark:border-appDarkBorder px-4 h-[56px] flex-row items-center">
-            <Ionicons name="mail-outline" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+          <View className="bg-appBg dark:bg-appDarkBg rounded-[18px] border border-appBorder dark:border-appDarkBorder px-4 h-[52px] flex-row items-center">
+            <Ionicons name="mail-outline" size={18} color={primary} />
             <TextInput
               value={identifier}
               onChangeText={setIdentifier}
@@ -106,8 +108,8 @@ export default function ForgotPasswordScreen() {
             />
           </View>
 
-          <View className="bg-appCard dark:bg-appDarkCard rounded-[22px] border border-appBorder dark:border-appDarkBorder px-4 h-[56px] flex-row items-center">
-            <Ionicons name="lock-closed-outline" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+          <View className="bg-appBg dark:bg-appDarkBg rounded-[18px] border border-appBorder dark:border-appDarkBorder px-4 h-[52px] flex-row items-center">
+            <Ionicons name="lock-closed-outline" size={18} color={primary} />
             <TextInput
               value={newPassword}
               onChangeText={setNewPassword}
@@ -123,8 +125,8 @@ export default function ForgotPasswordScreen() {
             </TouchableOpacity>
           </View>
 
-          <View className="bg-appCard dark:bg-appDarkCard rounded-[22px] border border-appBorder dark:border-appDarkBorder px-4 h-[56px] flex-row items-center">
-            <Ionicons name="shield-checkmark-outline" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+          <View className="bg-appBg dark:bg-appDarkBg rounded-[18px] border border-appBorder dark:border-appDarkBorder px-4 h-[52px] flex-row items-center">
+            <Ionicons name="shield-checkmark-outline" size={18} color={primary} />
             <TextInput
               value={confirmPassword}
               onChangeText={setConfirmPassword}
@@ -153,7 +155,7 @@ export default function ForgotPasswordScreen() {
             onPress={handleSubmit}
             disabled={!canSubmit}
             activeOpacity={0.9}
-            className={`py-4 rounded-[22px] items-center ${canSubmit ? 'bg-appText dark:bg-appDarkText' : 'bg-appBorder dark:bg-appDarkBorder'}`}
+            className={`py-4 rounded-[18px] items-center ${canSubmit ? 'bg-primary' : 'bg-appBorder dark:bg-appDarkBorder'}`}
           >
             <Text className={`text-[14px] font-extrabold ${canSubmit ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'}`}>
               {loading ? '重置中...' : '重置密码'}

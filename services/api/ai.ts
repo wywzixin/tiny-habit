@@ -7,6 +7,8 @@ export interface RecommendMicroBehaviorsRequest {
   habitName: string;
   habitCategory?: string;
   userContext?: string;
+  refresh?: boolean;
+  excludeBehaviors?: string[];
 }
 
 /**
@@ -19,6 +21,7 @@ export interface RecommendedMicroBehavior {
   difficulty: 'easy' | 'medium' | 'hard';
   icon: string;
   estimatedTime?: string; // 预计完成时间，如 "30分钟"、"5分钟"
+  anchor_suggestions?: string[];
 }
 
 /**
@@ -28,6 +31,8 @@ export interface RecommendAnchorsRequest {
   habitName: string;
   timeOfDay?: string;
   userContext?: string;
+  refresh?: boolean;
+  excludeAnchors?: string[];
 }
 
 /**
@@ -38,6 +43,22 @@ export interface RecommendedAnchor {
   description: string;
   timeOfDay: string;
   icon: string;
+}
+
+export interface RecommendCombinedRequest {
+  habitName: string;
+  habitCategory?: string;
+  timeOfDay?: string;
+  userContext?: string;
+  maxItems?: number;
+  refresh?: boolean;
+  excludeBehaviors?: string[];
+  excludeAnchors?: string[];
+}
+
+export interface CombinedRecommendResponse {
+  micro_behaviors: RecommendedMicroBehavior[];
+  anchors: RecommendedAnchor[];
 }
 
 /**
@@ -75,5 +96,23 @@ export const recommendAnchors = async (
     }
   );
   // 返回的 data 是 JSON 字符串，需要解析
+  return JSON.parse(response.data.data);
+};
+
+/**
+ * 合并推荐（微行为 + 锚点）
+ * POST /api/ai/recommend
+ * 需要认证
+ */
+export const recommendCombined = async (
+  data: RecommendCombinedRequest
+): Promise<CombinedRecommendResponse> => {
+  const response = await apiClient.post<ApiResponse<string>>(
+    '/api/ai/recommend',
+    data,
+    {
+      timeout: 60000,
+    }
+  );
   return JSON.parse(response.data.data);
 };

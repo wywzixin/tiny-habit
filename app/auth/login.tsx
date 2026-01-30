@@ -73,16 +73,16 @@ export default function LoginScreen() {
                 <TouchableOpacity
                   onPress={() => router.back()}
                   activeOpacity={0.85}
-                  className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
+                  className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 items-center justify-center"
                 >
-                  <Ionicons name="close" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+                  <Ionicons name="close" size={18} color={primary} />
                 </TouchableOpacity>
               </View>
             </View>
 
             <View className="gap-3">
-              <View className="bg-appCard dark:bg-appDarkCard rounded-[22px] border border-appBorder dark:border-appDarkBorder px-4 h-[56px] flex-row items-center">
-                <Ionicons name="mail-outline" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+              <View className="bg-appBg dark:bg-appDarkBg rounded-[18px] border border-appBorder dark:border-appDarkBorder px-4 h-[52px] flex-row items-center">
+                <Ionicons name="mail-outline" size={18} color={primary} />
                 <TextInput
                   value={identifier}
                   onChangeText={setIdentifier}
@@ -95,8 +95,8 @@ export default function LoginScreen() {
                 />
               </View>
 
-              <View className="bg-appCard dark:bg-appDarkCard rounded-[22px] border border-appBorder dark:border-appDarkBorder px-4 h-[56px] flex-row items-center">
-                <Ionicons name="lock-closed-outline" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+              <View className="bg-appBg dark:bg-appDarkBg rounded-[18px] border border-appBorder dark:border-appDarkBorder px-4 h-[52px] flex-row items-center">
+                <Ionicons name="lock-closed-outline" size={18} color={primary} />
                 <TextInput
                   value={password}
                   onChangeText={setPassword}
@@ -138,14 +138,14 @@ export default function LoginScreen() {
                 onPress={handleLogin}
                 disabled={!validIdentifier || !validPassword || loginMutation.isPending}
                 activeOpacity={0.9}
-                className={`py-4 rounded-[22px] items-center flex-row justify-center ${
+                className={`py-4 rounded-[18px] items-center flex-row justify-center ${
                   validIdentifier && validPassword && !loginMutation.isPending 
-                    ? 'bg-appText dark:bg-appDarkText' 
+                    ? 'bg-primary' 
                     : 'bg-appBorder dark:bg-appDarkBorder'
                 }`}
               >
                 {loginMutation.isPending ? (
-                  <ActivityIndicator size="small" color={isDarkMode ? '#0c0a09' : '#ffffff'} />
+                  <ActivityIndicator size="small" color="white" />
                 ) : (
                   <Text className={`text-[14px] font-extrabold ${
                     validIdentifier && validPassword ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
@@ -176,14 +176,14 @@ export default function LoginScreen() {
               <TouchableOpacity
                 onPress={() => handleThirdPartyLogin('QQ')}
                 activeOpacity={0.85}
-                className="w-14 h-14 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
+                className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 items-center justify-center"
               >
                 <FontAwesome name="qq" size={22} color={isDarkMode ? '#f5f5f4' : '#0c0a09'} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => handleThirdPartyLogin('微博')}
                 activeOpacity={0.85}
-                className="w-14 h-14 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
+                className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 items-center justify-center"
               >
                 <FontAwesome name="weibo" size={22} color="#e6162d" />
               </TouchableOpacity>
@@ -191,7 +191,7 @@ export default function LoginScreen() {
                 <TouchableOpacity
                   onPress={() => handleThirdPartyLogin('Apple')}
                   activeOpacity={0.85}
-                  className="w-14 h-14 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
+                  className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 items-center justify-center"
                 >
                   <Ionicons name="logo-apple" size={22} color={isDarkMode ? '#f5f5f4' : '#0c0a09'} />
                 </TouchableOpacity>

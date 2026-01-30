@@ -2,13 +2,19 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../stores';
+import { themeColors } from '../../stores/authStore';
 import { t } from '../../utils/i18n';
 
 export default function TabLayout() {
   const router = useRouter();
   const isDarkMode = useAuthStore((state) => state.isDarkMode);
   const language = useAuthStore((state) => state.language);
+  const themeColor = useAuthStore((state) => state.themeColor);
+  const currentTheme = themeColors[themeColor];
+  const tabBarBg = isDarkMode ? 'rgba(23,23,28,0.92)' : 'rgba(255,255,255,0.94)';
+  const tabBarBorder = isDarkMode ? 'rgba(72,72,85,0.55)' : 'rgba(231,229,228,0.85)';
 
   return (
     <Tabs
@@ -17,32 +23,32 @@ export default function TabLayout() {
         tabBarHideOnKeyboard: true,
         tabBarStyle: {
           position: 'absolute',
-          left: 16,
-          right: 16,
+          left: 18,
+          right: 18,
           bottom: 14,
-          height: 74,
-          paddingTop: 10,
-          paddingBottom: 12,
-          borderRadius: 28,
+          height: 62,
+          paddingTop: 6,
+          paddingBottom: 8,
+          borderRadius: 26,
           borderTopWidth: 0,
-          backgroundColor: isDarkMode ? '#17171C' : '#FFFFFF',
+          backgroundColor: tabBarBg,
           borderWidth: 1,
-          borderColor: isDarkMode ? '#2A2A33' : '#E7E5E4',
+          borderColor: tabBarBorder,
           shadowColor: '#000',
-          shadowOpacity: isDarkMode ? 0.25 : 0.08,
-          shadowRadius: 28,
-          shadowOffset: { width: 0, height: 14 },
-          elevation: 20,
+          shadowOpacity: isDarkMode ? 0.2 : 0.1,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: 10 },
+          elevation: 14,
         },
-        tabBarActiveTintColor: '#10B981',
+        tabBarActiveTintColor: currentTheme.primary,
         tabBarInactiveTintColor: isDarkMode ? '#a8a29e' : '#78716c',
         tabBarItemStyle: {
           paddingVertical: 2,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600',
-          marginTop: 4,
+          marginTop: 3,
         },
       }}
     >
@@ -70,16 +76,37 @@ export default function TabLayout() {
           title: '',
           tabBarLabel: () => null,
           tabBarItemStyle: {
-            width: 72,
+            width: 70,
           },
           tabBarIcon: () => (
-            <View style={{ marginTop: -28 }}>
+            <View style={{ marginTop: -22 }}>
               <TouchableOpacity
                 onPress={() => router.push('/create')}
                 activeOpacity={0.9}
-                className="w-[58px] h-[58px] rounded-full items-center justify-center bg-appText dark:bg-appDarkText border-4 border-appBg dark:border-appDarkBg shadow-lg"
+                style={{
+                  shadowColor: '#000',
+                  shadowOpacity: isDarkMode ? 0.25 : 0.18,
+                  shadowRadius: 10,
+                  shadowOffset: { width: 0, height: 6 },
+                  elevation: 10,
+                }}
               >
-                <Ionicons name="add" size={30} color="white" />
+                <LinearGradient
+                  colors={[currentTheme.primary, currentTheme.primaryLight]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    width: 54,
+                    height: 54,
+                    borderRadius: 27,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 3,
+                    borderColor: tabBarBg,
+                  }}
+                >
+                  <Ionicons name="add" size={28} color="#FFFFFF" />
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           ),

@@ -11,7 +11,7 @@ import { HabitCard, CelebrationModal, ConfirmModal } from '../../components/habi
 import { getTodayBackendDay } from '../../utils/dateHelper';
 import { useUserMicroBehaviors, useCheckIn, useTodayCheckIns, useCancelCheckIn } from '../../services/api/hooks';
 import { Alert } from 'react-native';
-import { getLocale, t } from '../../utils/i18n';
+import { t } from '../../utils/i18n';
 import { scheduleHabitReminders } from '../../services/notifications';
 
 export default function HomeScreen() {
@@ -69,12 +69,10 @@ export default function HomeScreen() {
   });
 
   const checkedCount = todayBehaviors.filter((b) => todayCheckIns.includes(b.id)).length;
-  const todayLabel = new Date().toLocaleDateString(getLocale(language), {
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-  });
-
+  const hasTodayBehaviors = todayBehaviors.length > 0;
+  const progressRatio = hasTodayBehaviors ? checkedCount / todayBehaviors.length : 0;
+  const progressWidth = `${Math.min(progressRatio * 100, 100)}%`;
+  const isAllDone = hasTodayBehaviors && checkedCount === todayBehaviors.length;
   const handleCheck = useCallback(async (behavior: typeof microBehaviors[0]) => {
     const isChecked = todayCheckIns.includes(behavior.id);
 
@@ -151,9 +149,6 @@ export default function HomeScreen() {
         <View className="pt-2 pb-4">
           <View className="flex-row items-end justify-between">
             <View>
-              <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
-                {todayLabel}
-              </Text>
               <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
                 {t(language, 'common.home')}
               </Text>
@@ -167,40 +162,63 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <TouchableOpacity
-            activeOpacity={0.92}
-            className="mt-4"
-          >
-            <LinearGradient
-              colors={gradientColors}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ borderRadius: 20, padding: 14 }}
-            >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-1 pr-3">
-                  <View className="bg-white/15 px-2.5 py-0.5 rounded-full self-start">
-                    <Text className="text-white text-[11px] font-bold">✨ {t(language, 'home.energy')}</Text>
-                  </View>
-                  <Text className="text-white text-[14px] font-bold leading-relaxed mt-2">
-                    {t(language, 'home.energyLine')}
+          {hasTodayBehaviors && (
+            <View className="mt-4 bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder">
+              <View className="flex-row items-center">
+                <View>
+                  <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
+                    {t(language, 'home.progressTitle')}
                   </Text>
-                </View>
-                <View className="w-11 h-11 rounded-2xl bg-white/18 items-center justify-center">
-                  <Text className="text-2xl">🌿</Text>
+                  <View className="flex-row items-baseline mt-1">
+                    <Text className="text-3xl font-extrabold text-appText dark:text-appDarkText">
+                      {checkedCount}
+                    </Text>
+                    <Text className="text-[13px] font-bold text-appMuted dark:text-appDarkMuted ml-1">
+                      / {todayBehaviors.length} {t(language, 'common.items')}
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </LinearGradient>
-          </TouchableOpacity>
+
+              <View className="mt-3 h-2 rounded-full bg-appBorder dark:bg-appDarkBorder overflow-hidden">
+                <LinearGradient
+                  colors={gradientColors}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ width: progressWidth, height: '100%' }}
+                />
+              </View>
+            </View>
+          )}
+
+          {isAllDone && (
+            <View
+              className="mt-3 px-3.5 py-2.5 rounded-[16px] flex-row items-center gap-2"
+              style={{
+                backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : currentTheme.primary + '10',
+                borderWidth: 1,
+                borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : currentTheme.primary + '22',
+              }}
+            >
+              <View className="w-8 h-8 rounded-2xl items-center justify-center" style={{ backgroundColor: currentTheme.primary + '20' }}>
+                <Text className="text-base">✨</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-[10px] font-bold text-appMuted dark:text-appDarkMuted">
+                  {t(language, 'home.energyTitle')}
+                </Text>
+                <Text className="text-[12px] font-semibold text-appText dark:text-appDarkText mt-0.5">
+                  {t(language, 'home.energyLine')}
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
 
         <View className="flex-row items-center justify-between mb-3">
           <View>
             <Text className="text-base font-extrabold text-appText dark:text-appDarkText">
               {t(language, 'home.today')}
-            </Text>
-            <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mt-0.5">
-              {t(language, 'home.startSimple')}
             </Text>
           </View>
           {todayBehaviors.length > 0 && (

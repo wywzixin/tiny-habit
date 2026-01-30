@@ -9,7 +9,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BottomSheet } from '../components/ui/BottomSheet';
 import { useUserRewards, useCreateReward, useRedeemReward } from '../services/api/hooks';
 import { useUserStats } from '../services/api/hooks/useStats';
-import { getLocale, t } from '../utils/i18n';
+import { t } from '../utils/i18n';
+import { useTheme } from '../hooks/useTheme';
 
 const icons = ['📚', '🎬', '🎮', '☕', '🍰', '🎁', '✈️', '🎸', '👕', '💄', '🎨', '🏃'];
 
@@ -19,6 +20,7 @@ export default function RewardsScreen() {
   const updateUser = useAuthStore((s) => s.updateUser);
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
   const language = useAuthStore((s) => s.language);
+  const { primary, primaryLight } = useTheme();
   
   // 本地存储（未登录用户）
   const { rewards: localRewards, addReward: addLocalReward, redeemReward: redeemLocalReward } = useRewardStore();
@@ -64,12 +66,6 @@ export default function RewardsScreen() {
   const [name, setName] = useState('');
   const [cost, setCost] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('📚');
-
-  const todayLabel = new Date().toLocaleDateString(getLocale(language), {
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-  });
 
   // 奖励列表：已登录用户使用云端数据，未登录用户使用本地数据
   const rewards = useMemo(() => {
@@ -156,9 +152,6 @@ export default function RewardsScreen() {
         <View className="pt-2 pb-4">
           <View className="flex-row items-start justify-between">
             <View>
-              <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
-                {todayLabel}
-              </Text>
               <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
                 {t(language, 'rewards.title')}
               </Text>
@@ -167,37 +160,39 @@ export default function RewardsScreen() {
             <TouchableOpacity
               onPress={() => router.back()}
               activeOpacity={0.85}
-              className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
+              className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 items-center justify-center"
             >
-              <Ionicons name="arrow-back" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+              <Ionicons name="arrow-back" size={18} color={primary} />
             </TouchableOpacity>
           </View>
 
           <View className="mt-4">
-            <LinearGradient
-              colors={isDarkMode ? ['#059669', '#10B981'] : ['#10B981', '#34D399']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ borderRadius: 22, padding: 16 }}
-            >
-              <View className="flex-row items-center justify-between">
-                <View>
-                  <Text className="text-white/90 text-[11px] font-bold">{t(language, 'rewards.availablePoints')}</Text>
-                  <Text className="text-white text-4xl font-extrabold mt-1">{availablePoints}</Text>
+            <View className="rounded-[20px] overflow-hidden border border-appBorder dark:border-appDarkBorder">
+              <LinearGradient
+                colors={[primary, primaryLight]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ padding: 16 }}
+              >
+                <View className="flex-row items-center justify-between">
+                  <View>
+                    <Text className="text-white/90 text-[11px] font-bold">{t(language, 'rewards.availablePoints')}</Text>
+                    <Text className="text-white text-4xl font-extrabold mt-1">{availablePoints}</Text>
+                  </View>
+                  <View className="w-11 h-11 rounded-2xl bg-white/18 border border-white/25 items-center justify-center">
+                    <Ionicons name="gift-outline" size={20} color="white" />
+                  </View>
                 </View>
-                <View className="w-12 h-12 rounded-2xl bg-white/18 items-center justify-center">
-                  <Text className="text-2xl">🎁</Text>
+                <View className="mt-4 flex-row gap-2">
+                  <View className="px-3 py-1.5 rounded-full bg-white/15 border border-white/25">
+                    <Text className="text-white/90 text-[11px] font-bold">{t(language, 'rewards.totalPoints')} {totalPoints}</Text>
+                  </View>
+                  <View className="px-3 py-1.5 rounded-full bg-white/15 border border-white/25">
+                    <Text className="text-white/90 text-[11px] font-bold">{t(language, 'rewards.redeemedPoints')} {redeemedPoints}</Text>
+                  </View>
                 </View>
-              </View>
-              <View className="mt-4 flex-row gap-2">
-                <View className="px-3 py-2 rounded-2xl bg-white/15">
-                  <Text className="text-white/90 text-[11px] font-bold">{t(language, 'rewards.totalPoints')} {totalPoints}</Text>
-                </View>
-                <View className="px-3 py-2 rounded-2xl bg-white/15">
-                  <Text className="text-white/90 text-[11px] font-bold">{t(language, 'rewards.redeemedPoints')} {redeemedPoints}</Text>
-                </View>
-              </View>
-            </LinearGradient>
+              </LinearGradient>
+            </View>
           </View>
         </View>
 
@@ -208,18 +203,20 @@ export default function RewardsScreen() {
           <TouchableOpacity
             onPress={() => setShowModal(true)}
             activeOpacity={0.85}
-            className="flex-row items-center gap-2 px-4 py-2 rounded-full bg-appText dark:bg-appDarkText"
+            className="flex-row items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/25"
           >
-            <Ionicons name="add" size={16} color={isDarkMode ? '#0c0a09' : 'white'} />
-            <Text className="text-[12px] font-extrabold text-white dark:text-appText">
+            <Ionicons name="add" size={16} color={primary} />
+            <Text className="text-[12px] font-extrabold" style={{ color: primary }}>
               {t(language, 'rewards.create')}
             </Text>
           </TouchableOpacity>
         </View>
 
         {rewards.length === 0 ? (
-          <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
-            <Text className="text-4xl mb-3">🎁</Text>
+          <View className="bg-appCard dark:bg-appDarkCard p-6 rounded-[18px] border border-appBorder dark:border-appDarkBorder items-center">
+            <View className="w-12 h-12 rounded-full bg-primary/10 border border-primary/15 items-center justify-center mb-3">
+              <Text className="text-2xl">🎁</Text>
+            </View>
             <Text className="text-sm font-extrabold text-appText dark:text-appDarkText">
               {t(language, 'rewards.empty')}
             </Text>
@@ -236,24 +233,24 @@ export default function RewardsScreen() {
               return (
                 <View
                   key={reward.id}
-                  className={`bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder ${
+                  className={`bg-appCard dark:bg-appDarkCard p-4 rounded-[18px] border border-appBorder dark:border-appDarkBorder ${
                     redeemed ? 'opacity-60' : ''
                   }`}
                 >
                   <View className="flex-row items-center gap-3">
-                    <View className="w-12 h-12 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
-                      <Text className="text-[22px]">{reward.icon}</Text>
+                    <View className="w-11 h-11 rounded-[14px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
+                      <Text className="text-[20px]">{reward.icon}</Text>
                     </View>
 
                     <View className="flex-1">
-                      <Text className={`text-[15px] font-extrabold text-appText dark:text-appDarkText ${
+                      <Text className={`text-[14px] font-extrabold text-appText dark:text-appDarkText ${
                         redeemed ? 'line-through' : ''
                       }`}>
                         {reward.name}
                       </Text>
                       <View className="mt-2 flex-row items-center gap-2">
-                        <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
-                          <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
+                        <View className="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/15">
+                          <Text className="text-[11px] font-bold text-primary">
                             {reward.cost} {t(language, 'common.points')}
                           </Text>
                         </View>
@@ -272,7 +269,7 @@ export default function RewardsScreen() {
                         disabled={!canRedeem}
                         activeOpacity={0.85}
                         className={`px-4 py-2 rounded-full ${
-                          canRedeem ? 'bg-appText dark:bg-appDarkText' : 'bg-appBorder dark:bg-appDarkBorder'
+                          canRedeem ? 'bg-primary' : 'bg-appBorder dark:bg-appDarkBorder'
                         }`}
                       >
                         <Text className={`text-[12px] font-extrabold ${
@@ -301,7 +298,7 @@ export default function RewardsScreen() {
             value={name}
             onChangeText={setName}
             placeholder={t(language, 'rewards.rewardNamePlaceholder')}
-            className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] px-4 py-4 text-[14px] font-semibold text-appText dark:text-appDarkText mb-4"
+            className="bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder rounded-[18px] px-4 py-3 text-[14px] font-semibold text-appText dark:text-appDarkText mb-4"
             placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
           />
 
@@ -311,7 +308,7 @@ export default function RewardsScreen() {
             onChangeText={setCost}
             placeholder={t(language, 'rewards.costPlaceholder')}
             keyboardType="numeric"
-            className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] px-4 py-4 text-[14px] font-semibold text-appText dark:text-appDarkText mb-4"
+            className="bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder rounded-[18px] px-4 py-3 text-[14px] font-semibold text-appText dark:text-appDarkText mb-4"
             placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
           />
 
@@ -322,13 +319,13 @@ export default function RewardsScreen() {
                 key={icon}
                 onPress={() => setSelectedIcon(icon)}
                 activeOpacity={0.85}
-                className={`w-12 h-12 rounded-2xl items-center justify-center border ${
+                className={`w-11 h-11 rounded-[16px] items-center justify-center border ${
                   selectedIcon === icon
                     ? 'border-primary bg-primary/10 dark:bg-primary/15'
-                    : 'border-appBorder dark:border-appDarkBorder bg-appCard dark:bg-appDarkCard'
+                    : 'border-appBorder dark:border-appDarkBorder bg-appBg dark:bg-appDarkBg'
                 }`}
               >
-                <Text className="text-2xl">{icon}</Text>
+                <Text className="text-[20px]">{icon}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -336,7 +333,7 @@ export default function RewardsScreen() {
           <TouchableOpacity
             onPress={handleAddReward}
             activeOpacity={0.9}
-            className="bg-appText dark:bg-appDarkText py-4 rounded-[22px] items-center"
+            className="bg-primary py-4 rounded-[18px] items-center"
           >
             <Text className="text-white dark:text-appText font-extrabold">{t(language, 'common.confirm')}</Text>
           </TouchableOpacity>

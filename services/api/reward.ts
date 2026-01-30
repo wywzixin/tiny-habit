@@ -25,13 +25,6 @@ export interface CreateRewardRequest {
 }
 
 /**
- * 兑换奖励请求参数
- */
-export interface RedeemRewardRequest {
-  userId: number;
-}
-
-/**
  * 创建奖励
  * POST /api/reward
  */
@@ -54,11 +47,11 @@ export const getUserRewards = async (userId: number): Promise<Reward[]> => {
 /**
  * 兑换奖励
  * POST /api/reward/{id}/redeem
+ * 注意：userId 从 token 自动获取，无需传递
  */
-export const redeemReward = async (rewardId: number, data: RedeemRewardRequest): Promise<Reward> => {
+export const redeemReward = async (rewardId: number): Promise<Reward> => {
   const response = await apiClient.post<ApiResponse<Reward>>(
-    `/api/reward/${rewardId}/redeem`,
-    data
+    `/api/reward/${rewardId}/redeem`
   );
   return response.data.data;
 };

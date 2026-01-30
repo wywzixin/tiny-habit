@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../stores';
 import { useRegister } from '../../services/api';
 import { t } from '../../utils/i18n';
+import { useTheme } from '../../hooks/useTheme';
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim().toLowerCase());
@@ -20,6 +21,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
   const language = useAuthStore((s) => s.language);
+  const { primary } = useTheme();
   
   // 使用 React Query mutation
   const registerMutation = useRegister();
@@ -63,15 +65,15 @@ export default function RegisterScreen() {
         <View className="pt-2 pb-4">
           <View className="flex-row items-center justify-between">
             <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">{t(language, 'auth.register')}</Text>
-            <TouchableOpacity onPress={() => router.back()} activeOpacity={0.85} className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center">
-              <Ionicons name="arrow-back" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+            <TouchableOpacity onPress={() => router.back()} activeOpacity={0.85} className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 items-center justify-center">
+              <Ionicons name="arrow-back" size={18} color={primary} />
             </TouchableOpacity>
           </View>
         </View>
 
         <View className="gap-3">
-          <View className="bg-appCard dark:bg-appDarkCard rounded-[22px] border border-appBorder dark:border-appDarkBorder px-4 h-[56px] flex-row items-center">
-            <Ionicons name="person-outline" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+          <View className="bg-appBg dark:bg-appDarkBg rounded-[18px] border border-appBorder dark:border-appDarkBorder px-4 h-[52px] flex-row items-center">
+            <Ionicons name="person-outline" size={18} color={primary} />
             <TextInput
               value={username}
               onChangeText={setUsername}
@@ -82,8 +84,8 @@ export default function RegisterScreen() {
               returnKeyType="next"
             />
           </View>
-          <View className="bg-appCard dark:bg-appDarkCard rounded-[22px] border border-appBorder dark:border-appDarkBorder px-4 h-[56px] flex-row items-center">
-            <Ionicons name="mail-outline" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+          <View className="bg-appBg dark:bg-appDarkBg rounded-[18px] border border-appBorder dark:border-appDarkBorder px-4 h-[52px] flex-row items-center">
+            <Ionicons name="mail-outline" size={18} color={primary} />
             <TextInput
               value={identifier}
               onChangeText={setIdentifier}
@@ -95,8 +97,8 @@ export default function RegisterScreen() {
               returnKeyType="next"
             />
           </View>
-          <View className="bg-appCard dark:bg-appDarkCard rounded-[22px] border border-appBorder dark:border-appDarkBorder px-4 h-[56px] flex-row items-center">
-            <Ionicons name="lock-closed-outline" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+          <View className="bg-appBg dark:bg-appDarkBg rounded-[18px] border border-appBorder dark:border-appDarkBorder px-4 h-[52px] flex-row items-center">
+            <Ionicons name="lock-closed-outline" size={18} color={primary} />
             <TextInput
               value={password}
               onChangeText={setPassword}
@@ -125,14 +127,14 @@ export default function RegisterScreen() {
             onPress={handleRegister}
             disabled={!validUsername || !validIdentifier || !validPassword || registerMutation.isPending}
             activeOpacity={0.9}
-            className={`py-4 rounded-[22px] items-center flex-row justify-center ${
+            className={`py-4 rounded-[18px] items-center flex-row justify-center ${
               validUsername && validIdentifier && validPassword && !registerMutation.isPending
-                ? 'bg-appText dark:bg-appDarkText' 
+                ? 'bg-primary' 
                 : 'bg-appBorder dark:bg-appDarkBorder'
             }`}
           >
             {registerMutation.isPending ? (
-              <ActivityIndicator size="small" color={isDarkMode ? '#0c0a09' : '#ffffff'} />
+              <ActivityIndicator size="small" color="white" />
             ) : (
               <Text className={`text-[14px] font-extrabold ${
                 validUsername && validIdentifier && validPassword 
@@ -147,7 +149,7 @@ export default function RegisterScreen() {
           <View className="mt-4 flex-row items-center justify-center">
             <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted">{t(language, 'auth.hasAccount')}</Text>
             <TouchableOpacity onPress={() => router.replace('/auth/login')} activeOpacity={0.85} className="ml-1">
-              <Text className="text-[12px] font-extrabold text-primary">{t(language, 'auth.gotoLogin')}</Text>
+              <Text className="text-[12px] font-extrabold" style={{ color: primary }}>{t(language, 'auth.gotoLogin')}</Text>
             </TouchableOpacity>
           </View>
         </View>

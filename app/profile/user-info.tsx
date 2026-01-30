@@ -8,6 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../stores';
 import { BottomSheet } from '../../components/ui/BottomSheet';
 import { uploadFile, updateProfile as updateProfileApi } from '../../services/api';
+import { useTheme } from '../../hooks/useTheme';
 
 function genderLabel(g: 'male' | 'female' | 'unknown' | undefined) {
   if (g === 'male') return '男';
@@ -19,6 +20,7 @@ export default function UserInfoScreen() {
   const router = useRouter();
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
   const { user, isLoggedIn, updateUser, clearAuth } = useAuthStore();
+  const { primary, textMuted } = useTheme();
   
   const logout = () => {
     clearAuth();
@@ -201,7 +203,7 @@ export default function UserInfoScreen() {
         <TouchableOpacity
           onPress={() => router.push('/auth/login')}
           activeOpacity={0.85}
-          className="mt-4 px-4 py-3 rounded-[22px] bg-appText dark:bg-appDarkText"
+          className="mt-4 px-4 py-3 rounded-[18px] bg-primary"
         >
           <Text className="text-white dark:text-appText font-extrabold">去登录</Text>
         </TouchableOpacity>
@@ -216,9 +218,9 @@ export default function UserInfoScreen() {
           <TouchableOpacity
             onPress={() => router.back()}
             activeOpacity={0.85}
-            className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
+            className="w-10 h-10 rounded-2xl bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center"
           >
-            <Ionicons name="arrow-back" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+            <Ionicons name="arrow-back" size={18} color={textMuted} />
           </TouchableOpacity>
           <Text className="text-base font-extrabold text-appText dark:text-appDarkText">
             用户信息
@@ -228,7 +230,7 @@ export default function UserInfoScreen() {
             disabled={!hasChanges || saving}
             activeOpacity={0.85}
             className={`px-4 h-10 rounded-2xl items-center justify-center ${
-              hasChanges && !saving ? 'bg-appText dark:bg-appDarkText' : 'bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder'
+              hasChanges && !saving ? 'bg-primary' : 'bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder'
             }`}
           >
             <Text className={`text-sm font-extrabold ${
@@ -251,11 +253,11 @@ export default function UserInfoScreen() {
             activeOpacity={0.85}
             disabled={uploading}
           >
-            <View className="w-24 h-24 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center overflow-hidden">
+            <View className="w-24 h-24 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center overflow-hidden">
               {draftAvatarUrl ? (
                 <Image source={{ uri: draftAvatarUrl }} className="w-full h-full" resizeMode="cover" />
               ) : (
-                <Ionicons name="person" size={42} color={isDarkMode ? '#a8a29e' : '#78716c'} />
+                <Ionicons name="person" size={42} color={textMuted} />
               )}
               {uploading && (
                 <View className="absolute inset-0 bg-black/50 items-center justify-center">
@@ -263,13 +265,13 @@ export default function UserInfoScreen() {
                 </View>
               )}
             </View>
-            <View className="absolute -right-1 -bottom-1 w-8 h-8 rounded-full bg-appText dark:bg-appDarkText items-center justify-center border-4 border-appBg dark:border-appDarkBg">
-              <Ionicons name="camera" size={14} color={isDarkMode ? '#0c0a09' : 'white'} />
+            <View className="absolute -right-1 -bottom-1 w-8 h-8 rounded-full bg-appCard dark:bg-appDarkCard items-center justify-center border-4 border-appBg dark:border-appDarkBg">
+              <Ionicons name="camera" size={14} color={textMuted} />
             </View>
           </TouchableOpacity>
         </View>
 
-        <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[22px] overflow-hidden">
+        <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[18px] overflow-hidden">
           <View className="px-4 py-4 flex-row items-center justify-between border-b border-appBorder dark:border-appDarkBorder">
             <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">昵称</Text>
             <View className="flex-1 ml-4">
@@ -324,7 +326,7 @@ export default function UserInfoScreen() {
         <TouchableOpacity
           onPress={() => { logout(); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); router.back(); }}
           activeOpacity={0.85}
-          className="mt-6 py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center"
+          className="mt-6 py-4 rounded-[18px] bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 items-center"
         >
           <Text className="text-red-500 font-extrabold">退出登录</Text>
         </TouchableOpacity>
@@ -343,7 +345,7 @@ export default function UserInfoScreen() {
               setShowAvatarSheet(false);
             }}
             activeOpacity={0.85}
-            className="py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center"
+            className="py-4 rounded-[18px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center"
           >
             <Text className="text-appText dark:text-appDarkText font-extrabold">拍照</Text>
           </TouchableOpacity>
@@ -354,7 +356,7 @@ export default function UserInfoScreen() {
               setShowAvatarSheet(false);
             }}
             activeOpacity={0.85}
-            className="mt-3 py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center"
+            className="mt-3 py-4 rounded-[18px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center"
           >
             <Text className="text-appText dark:text-appDarkText font-extrabold">从相册选择</Text>
           </TouchableOpacity>
@@ -362,7 +364,7 @@ export default function UserInfoScreen() {
           <TouchableOpacity
             onPress={() => setShowAvatarSheet(false)}
             activeOpacity={0.85}
-            className="mt-3 py-4 rounded-[22px] bg-appText dark:bg-appDarkText items-center"
+            className="mt-3 py-4 rounded-[18px] bg-primary items-center"
           >
             <Text className="text-white dark:text-appText font-extrabold">取消</Text>
           </TouchableOpacity>
@@ -380,13 +382,13 @@ export default function UserInfoScreen() {
               key={g}
               onPress={() => { setDraftGender(g); setHasChanges(true); setShowGenderSheet(false); Haptics.selectionAsync(); }}
               activeOpacity={0.85}
-              className="py-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder flex-row items-center justify-between px-4"
+              className="py-4 rounded-[18px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder flex-row items-center justify-between px-4"
             >
               <Text className="text-appText dark:text-appDarkText font-extrabold">
                 {genderLabel(g)}
               </Text>
               {draftGender === g && (
-                <Ionicons name="checkmark" size={18} color="#10B981" />
+                <Ionicons name="checkmark" size={18} color={primary} />
               )}
             </TouchableOpacity>
           ))}

@@ -39,24 +39,33 @@ export function ConfirmModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View className="flex-1 bg-black/45 items-center justify-center px-6">
+      <View className="flex-1 bg-black/40 items-center justify-center px-6">
         <Animated.View
           style={{ transform: [{ scale: cardScale }] }}
-          className="w-full max-w-sm rounded-[24px] overflow-hidden"
+          className="w-full max-w-sm rounded-[28px] overflow-hidden"
         >
-          <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder px-5 py-5">
-            <Text className="text-[17px] font-extrabold text-appText dark:text-appDarkText text-center">
+          <View
+            className="px-6"
+            style={{
+              paddingVertical: 28,
+              backgroundColor: isDarkMode ? 'rgba(30,30,34,0.92)' : 'rgba(244,244,246,0.96)',
+              borderWidth: 1,
+              borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.8)',
+            }}
+          >
+            <Text className="text-[18px] font-extrabold text-appText dark:text-appDarkText">
               {title}
             </Text>
-            <Text className="text-[14px] font-medium text-appMuted dark:text-appDarkMuted text-center mt-2 leading-relaxed">
+            <Text className="text-[14px] font-medium text-appMuted dark:text-appDarkMuted mt-2 leading-relaxed">
               {message}
             </Text>
 
-            <View className="flex-row gap-3 mt-5">
+            <View className="flex-row gap-3 mt-6">
               <TouchableOpacity
                 onPress={onCancel}
                 activeOpacity={0.85}
-                className="flex-1 bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder rounded-2xl py-3"
+                className="flex-1 rounded-full py-3"
+                style={{ backgroundColor: isDarkMode ? 'rgba(82,82,91,0.65)' : '#D1D5DB' }}
               >
                 <Text className="text-[15px] font-bold text-appText dark:text-appDarkText text-center">
                   {cancelText}
@@ -66,9 +75,10 @@ export function ConfirmModal({
               <TouchableOpacity
                 onPress={onConfirm}
                 activeOpacity={0.85}
-                className="flex-1 bg-red-500 rounded-2xl py-3"
+                className="flex-1 rounded-full py-3"
+                style={{ backgroundColor: isDarkMode ? 'rgba(82,82,91,0.65)' : '#D1D5DB' }}
               >
-                <Text className="text-[15px] font-bold text-white text-center">
+                <Text className="text-[15px] font-bold text-red-500 text-center">
                   {confirmText}
                 </Text>
               </TouchableOpacity>

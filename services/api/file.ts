@@ -23,6 +23,7 @@ export const uploadFile = async (file: {
   const formData = new FormData();
   formData.append('file', file as any);
 
+  // React Native 环境下 axios 需要显式设置 Content-Type
   const response = await apiClient.post<ApiResponse<FileUploadResponse>>(
     '/api/file/upload',
     formData,

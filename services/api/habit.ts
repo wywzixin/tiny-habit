@@ -168,3 +168,22 @@ export const updateRecipe = async (data: UpdateRecipeRequest): Promise<CreateRec
   );
   return response.data.data;
 };
+
+/**
+ * 获取微行为详情
+ * GET /api/micro-behavior/{id}
+ */
+export const getMicroBehaviorById = async (id: number): Promise<MicroBehaviorResponse> => {
+  const response = await apiClient.get<ApiResponse<MicroBehaviorResponse>>(
+    `/api/micro-behavior/${id}`
+  );
+  return response.data.data;
+};
+
+/**
+ * 删除微行为
+ * DELETE /api/micro-behavior/{id}
+ */
+export const deleteMicroBehavior = async (id: number): Promise<void> => {
+  await apiClient.delete(`/api/micro-behavior/${id}`);
+};

@@ -45,7 +45,7 @@ export const useRedeemReward = () => {
 
   return useMutation({
     mutationFn: ({ rewardId, cost }: { rewardId: number; cost: number }) =>
-      rewardApi.redeemReward(rewardId, { userId: user!.id }),
+      rewardApi.redeemReward(rewardId),
     onSuccess: (_, variables) => {
       // 更新用户可用积分（扣除兑换消耗的积分）
       if (user) {

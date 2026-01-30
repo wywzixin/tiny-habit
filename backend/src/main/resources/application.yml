@@ -1,0 +1,47 @@
+server:
+  port: 8081
+  # address: 192.168.10.64  # 注释掉，让服务器监听所有网络接口
+
+spring:
+  application:
+    name: tiny-habits-backend
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/tiny_habits?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password: "151393"
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 10MB
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+jwt:
+  secret: tinyhabits2026secretkey1234567890abcdefghijklmnop
+  expiration: 604800000
+
+# 文件上传配置
+file:
+  upload:
+    path: E:/react/tiny-habit-backend/uploads
+
+# 智谱AI配置
+zhipuai:
+  api-key: f8e989fc7470422abb3b89f5a540b49f.qXbhKXapJ8Mcgcqi
+  model: glm-4-flash

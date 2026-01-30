@@ -5,12 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../stores';
 import { useRecipeTemplates, useAddFromTemplate } from '../../services/api/hooks';
-import { getLocale, t } from '../../utils/i18n';
+import { t } from '../../utils/i18n';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function DiscoverScreen() {
   const isDarkMode = useAuthStore((state) => state.isDarkMode);
   const user = useAuthStore((s) => s.user);
   const language = useAuthStore((s) => s.language);
+  const { primary } = useTheme();
   const [search, setSearch] = useState('');
   const [addedIds, setAddedIds] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('全部');
@@ -31,12 +33,6 @@ export default function DiscoverScreen() {
   
   // 从模板添加微行为
   const addFromTemplateMutation = useAddFromTemplate();
-
-  const todayLabel = new Date().toLocaleDateString(getLocale(language), {
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-  });
 
   const filteredRecipes = recipes.filter((r) => {
     const matchesSearch = r.anchor.includes(search) || r.behavior.includes(search) || r.name.includes(search);
@@ -86,9 +82,6 @@ export default function DiscoverScreen() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
       >
         <View className="pt-2 pb-4">
-          <Text className="text-[11px] font-semibold text-appMuted dark:text-appDarkMuted">
-            {todayLabel}
-          </Text>
           <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText mt-0.5">
             {t(language, 'common.discover')}
           </Text>
@@ -96,7 +89,7 @@ export default function DiscoverScreen() {
             {t(language, 'home.startSimple')}
           </Text>
 
-          <View className="mt-4 rounded-[22px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder px-4 py-3 flex-row items-center">
+          <View className="mt-4 rounded-[18px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder px-4 py-3 flex-row items-center">
             <Ionicons name="search" size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
             <TextInput
               value={search}
@@ -110,7 +103,7 @@ export default function DiscoverScreen() {
               <TouchableOpacity
                 onPress={() => setSearch('')}
                 activeOpacity={0.85}
-                className="w-8 h-8 rounded-full bg-appBg dark:bg-appDarkCard items-center justify-center border border-appBorder dark:border-appDarkBorder"
+                className="w-8 h-8 rounded-full bg-appCard dark:bg-appDarkCard items-center justify-center border border-appBorder dark:border-appDarkBorder"
               >
                 <Ionicons name="close" size={16} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
               </TouchableOpacity>
@@ -132,13 +125,13 @@ export default function DiscoverScreen() {
                     activeOpacity={0.85}
                     className={`px-4 py-2 rounded-full border ${
                       active
-                        ? 'bg-appText dark:bg-appDarkText border-appText dark:border-appDarkText'
+                        ? 'bg-primary/10 border-primary/25'
                         : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
                     }`}
                   >
                     <Text
                       className={`text-[12px] font-bold ${
-                        active ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
+                        active ? 'text-primary' : 'text-appMuted dark:text-appDarkMuted'
                       }`}
                     >
                       {category.label}
@@ -159,7 +152,7 @@ export default function DiscoverScreen() {
               {t(language, 'discover.tapToAdd')}
             </Text>
           </View>
-          <View className="px-3 py-1.5 rounded-full bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder">
+          <View className="px-3 py-1.5 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
               <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
                 {filteredRecipes.length} {t(language, 'common.items')}
               </Text>
@@ -168,21 +161,21 @@ export default function DiscoverScreen() {
 
         <View className="gap-3">
           {isLoading ? (
-            <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
-              <ActivityIndicator size="large" color="#10B981" />
+            <View className="bg-appCard dark:bg-appDarkCard p-6 rounded-[18px] border border-appBorder dark:border-appDarkBorder items-center">
+              <ActivityIndicator size="large" color={primary} />
               <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed mt-3">
                 {t(language, 'common.loading')}
               </Text>
             </View>
           ) : error ? (
-            <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
+            <View className="bg-appCard dark:bg-appDarkCard p-6 rounded-[18px] border border-appBorder dark:border-appDarkBorder items-center">
               <Text className="text-4xl mb-3">⚠️</Text>
               <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed">
                 {t(language, 'discover.loadingFailed')}
               </Text>
             </View>
           ) : filteredRecipes.length === 0 ? (
-            <View className="bg-appCard dark:bg-appDarkCard p-8 rounded-[22px] border border-appBorder dark:border-appDarkBorder items-center">
+            <View className="bg-appCard dark:bg-appDarkCard p-6 rounded-[18px] border border-appBorder dark:border-appDarkBorder items-center">
               <Text className="text-4xl mb-3">🔍</Text>
               <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed">
                 {t(language, 'discover.empty')}
@@ -197,26 +190,26 @@ export default function DiscoverScreen() {
               return (
                 <View
                   key={recipe.id}
-                  className={`bg-appCard dark:bg-appDarkCard p-4 rounded-[22px] border border-appBorder dark:border-appDarkBorder flex-row items-center ${
+                  className={`bg-appCard dark:bg-appDarkCard p-4 rounded-[18px] border border-appBorder dark:border-appDarkBorder flex-row items-center ${
                     alreadyAdded ? 'opacity-60' : ''
                   }`}
                 >
-                  <View className="w-12 h-12 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
-                    <Text className="text-[22px]">{recipe.icon}</Text>
+                  <View className="w-11 h-11 rounded-[14px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
+                    <Text className="text-[20px]">{recipe.icon}</Text>
                   </View>
 
                   <View className="flex-1">
                     <View className="flex-row items-center gap-2 flex-wrap">
-                      <Text className="text-[15px] font-extrabold text-appText dark:text-appDarkText" numberOfLines={1}>
+                      <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText" numberOfLines={1}>
                         {recipe.name}
                       </Text>
-                      <View className="px-2.5 py-1 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder">
-                        <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">
+                      <View className="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/15">
+                        <Text className="text-[11px] font-bold text-primary">
                           {recipe.category}
                         </Text>
                       </View>
                       {alreadyAdded && (
-                        <View className="px-2.5 py-1 rounded-full bg-primary/10 dark:bg-primary/15 border border-primary/25 dark:border-primary/30">
+                        <View className="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
                           <Text className="text-[11px] font-bold text-primary">{t(language, 'discover.added')}</Text>
                         </View>
                       )}
@@ -230,19 +223,19 @@ export default function DiscoverScreen() {
                     onPress={() => handleAdd(recipe.id)}
                     activeOpacity={0.85}
                     disabled={isAdded || addFromTemplateMutation.isPending}
-                    className={`w-10 h-10 rounded-full items-center justify-center border ${
+                    className={`w-9 h-9 rounded-full items-center justify-center border ${
                       isAdded
                         ? 'bg-primary border-primary'
-                        : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
+                        : 'bg-primary/10 border-primary/20'
                     }`}
                   >
                     {addFromTemplateMutation.isPending ? (
-                      <ActivityIndicator size="small" color={isDarkMode ? '#d6d3d1' : '#78716c'} />
+                      <ActivityIndicator size="small" color={primary} />
                     ) : (
                       <Ionicons
                         name={isAdded ? 'checkmark' : 'add'}
                         size={20}
-                        color={isAdded ? 'white' : (isDarkMode ? '#d6d3d1' : '#78716c')}
+                        color={isAdded ? 'white' : primary}
                       />
                     )}
                   </TouchableOpacity>
