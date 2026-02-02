@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -90,13 +90,13 @@ export default function DetailScreen() {
       <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg items-center justify-center">
         <Text className="text-4xl mb-3">🔍</Text>
         <Text className="text-appMuted dark:text-appDarkMuted">{t(language, 'detail.notFound')}</Text>
-        <TouchableOpacity
+        <Pressable
           onPress={() => router.back()}
-          activeOpacity={0.85}
+          style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           className="mt-5 bg-appText dark:bg-appDarkText px-4 py-3 rounded-2xl"
         >
           <Text className="text-white dark:text-appText font-bold">{t(language, 'common.back')}</Text>
-        </TouchableOpacity>
+        </Pressable>
       </SafeAreaView>
     );
   }
@@ -126,20 +126,20 @@ export default function DetailScreen() {
             </View>
 
             <View className="flex-row items-center gap-2">
-              <TouchableOpacity
+              <Pressable
                 onPress={() => router.push(`/edit/${id}`)}
-                activeOpacity={0.85}
+                style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                 className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
               >
                 <Ionicons name="create-outline" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 onPress={() => router.back()}
-                activeOpacity={0.85}
+                style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                 className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
               >
                 <Ionicons name="arrow-back" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
 
@@ -236,15 +236,15 @@ export default function DetailScreen() {
           </View>
         </View>
 
-        <TouchableOpacity
+        <Pressable
           onPress={handleDelete}
-          activeOpacity={0.9}
+          style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
           className="py-4 rounded-[22px] border border-red-200/70 dark:border-red-500/30 bg-red-50/60 dark:bg-red-500/10 items-center"
         >
           <Text className="text-[14px] font-extrabold text-red-500">
             {t(language, 'detail.delete')}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );

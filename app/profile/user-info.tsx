@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Alert, InteractionManager, Linking } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Alert, Linking, Image, Platform, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -51,6 +51,7 @@ export default function UserInfoScreen() {
     if (!pendingPicker) return;
     const next = pendingPicker;
     setPendingPicker(null);
+    
     InteractionManager.runAfterInteractions(() => {
       if (next === 'camera') {
         pickFromCamera();
@@ -60,10 +61,27 @@ export default function UserInfoScreen() {
     });
   };
 
+  const handlePickerAction = (type: 'camera' | 'library') => {
+    if (Platform.OS === 'ios') {
+      // iOS: 使用原来的方式（pendingPicker + onDismiss）
+      setPendingPicker(type);
+      setShowAvatarSheet(false);
+    } else {
+      // Android: 使用 setTimeout 延迟执行
+      setShowAvatarSheet(false);
+      setTimeout(() => {
+        if (type === 'camera') {
+          pickFromCamera();
+        } else {
+          pickFromLibrary();
+        }
+      }, 300);
+    }
+  };
+
   const pickFromLibrary = async () => {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      console.log('相册权限:', perm);
       
       if (!perm.granted) {
         if (!perm.canAskAgain) {
@@ -83,24 +101,22 @@ export default function UserInfoScreen() {
         aspect: [1, 1],
         quality: 0.85,
       });
-      
-      console.log('选择结果:', result);
 
       if (result.canceled) return;
+      
       const asset = result.assets?.[0];
       if (!asset?.uri) return;
       
       await uploadAvatar(asset.uri);
     } catch (error) {
       console.error('选择相册失败:', error);
-      Alert.alert('错误', '选择相册失败');
+      Alert.alert('错误', `选择相册失败: ${error}`);
     }
   };
 
   const pickFromCamera = async () => {
     try {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
-      console.log('相机权限:', perm);
       
       if (!perm.granted) {
         if (!perm.canAskAgain) {
@@ -120,17 +136,16 @@ export default function UserInfoScreen() {
         aspect: [1, 1],
         quality: 0.85,
       });
-      
-      console.log('拍照结果:', result);
 
       if (result.canceled) return;
+      
       const asset = result.assets?.[0];
       if (!asset?.uri) return;
       
       await uploadAvatar(asset.uri);
     } catch (error) {
       console.error('拍照失败:', error);
-      Alert.alert('错误', '拍照失败');
+      Alert.alert('错误', `拍照失败: ${error}`);
     }
   };
   
@@ -200,13 +215,13 @@ export default function UserInfoScreen() {
         <Text className="text-[14px] font-semibold text-appMuted dark:text-appDarkMuted">
           请先登录
         </Text>
-        <TouchableOpacity
+        <Pressable
           onPress={() => router.push('/auth/login')}
-          activeOpacity={0.85}
+          style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           className="mt-4 px-4 py-3 rounded-[18px] bg-primary"
         >
           <Text className="text-white dark:text-appText font-extrabold">去登录</Text>
-        </TouchableOpacity>
+        </Pressable>
       </SafeAreaView>
     );
   }
@@ -215,20 +230,20 @@ export default function UserInfoScreen() {
     <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg">
       <View className="px-5 pt-2 pb-4">
         <View className="flex-row items-center justify-between">
-          <TouchableOpacity
+          <Pressable
             onPress={() => router.back()}
-            activeOpacity={0.85}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
             className="w-10 h-10 rounded-2xl bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center"
           >
             <Ionicons name="arrow-back" size={18} color={textMuted} />
-          </TouchableOpacity>
+          </Pressable>
           <Text className="text-base font-extrabold text-appText dark:text-appDarkText">
             用户信息
           </Text>
-          <TouchableOpacity
+          <Pressable
             onPress={handleSave}
             disabled={!hasChanges || saving}
-            activeOpacity={0.85}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
             className={`px-4 h-10 rounded-2xl items-center justify-center ${
               hasChanges && !saving ? 'bg-primary' : 'bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder'
             }`}
@@ -238,7 +253,7 @@ export default function UserInfoScreen() {
             }`}>
               {saving ? '保存中...' : '保存'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
 
@@ -248,14 +263,18 @@ export default function UserInfoScreen() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
       >
         <View className="items-center py-4">
-          <TouchableOpacity 
+          <Pressable 
             onPress={() => setShowAvatarSheet(true)} 
-            activeOpacity={0.85}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
             disabled={uploading}
           >
             <View className="w-24 h-24 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center overflow-hidden">
               {draftAvatarUrl ? (
-                <Image source={{ uri: draftAvatarUrl }} className="w-full h-full" resizeMode="cover" />
+                <Image 
+                  source={{ uri: draftAvatarUrl }} 
+                  className="w-full h-full" 
+                  resizeMode="cover"
+                />
               ) : (
                 <Ionicons name="person" size={42} color={textMuted} />
               )}
@@ -268,7 +287,7 @@ export default function UserInfoScreen() {
             <View className="absolute -right-1 -bottom-1 w-8 h-8 rounded-full bg-appCard dark:bg-appDarkCard items-center justify-center border-4 border-appBg dark:border-appDarkBg">
               <Ionicons name="camera" size={14} color={textMuted} />
             </View>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[18px] overflow-hidden">
@@ -285,9 +304,9 @@ export default function UserInfoScreen() {
             </View>
           </View>
 
-          <TouchableOpacity
+          <Pressable
             onPress={() => setShowGenderSheet(true)}
-            activeOpacity={0.85}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
             className="px-4 py-4 flex-row items-center justify-between border-b border-appBorder dark:border-appDarkBorder"
           >
             <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">性别</Text>
@@ -297,7 +316,7 @@ export default function UserInfoScreen() {
               </Text>
               <Ionicons name="chevron-forward" size={16} color={isDarkMode ? '#44403c' : '#d6d3d1'} />
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
           <View className="px-4 py-4 flex-row items-center justify-between border-b border-appBorder dark:border-appDarkBorder">
             <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">账号</Text>
@@ -313,61 +332,55 @@ export default function UserInfoScreen() {
             </Text>
           </View>
 
-          <TouchableOpacity
+          <Pressable
             onPress={() => Alert.alert('提示', '功能开发中')}
-            activeOpacity={0.85}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
             className="px-4 py-4 flex-row items-center justify-between"
           >
             <Text className="text-[14px] font-extrabold text-appText dark:text-appDarkText">账户安全</Text>
             <Ionicons name="chevron-forward" size={16} color={isDarkMode ? '#44403c' : '#d6d3d1'} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
-        <TouchableOpacity
+        <Pressable
           onPress={() => { logout(); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); router.back(); }}
-          activeOpacity={0.85}
+          style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           className="mt-6 py-4 rounded-[18px] bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 items-center"
         >
           <Text className="text-red-500 font-extrabold">退出登录</Text>
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
 
       <BottomSheet
         visible={showAvatarSheet}
         title="选择头像"
         onClose={() => setShowAvatarSheet(false)}
-        onDismiss={handleAvatarSheetDismiss}
+        onDismiss={Platform.OS === 'ios' ? handleAvatarSheetDismiss : undefined}
       >
         <View className="px-5 pb-8">
-          <TouchableOpacity
-            onPress={() => { 
-              setPendingPicker('camera');
-              setShowAvatarSheet(false);
-            }}
-            activeOpacity={0.85}
+          <Pressable
+            onPress={() => handlePickerAction('camera')}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
             className="py-4 rounded-[18px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center"
           >
             <Text className="text-appText dark:text-appDarkText font-extrabold">拍照</Text>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
-            onPress={() => { 
-              setPendingPicker('library');
-              setShowAvatarSheet(false);
-            }}
-            activeOpacity={0.85}
+          <Pressable
+            onPress={() => handlePickerAction('library')}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
             className="mt-3 py-4 rounded-[18px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center"
           >
             <Text className="text-appText dark:text-appDarkText font-extrabold">从相册选择</Text>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
+          <Pressable
             onPress={() => setShowAvatarSheet(false)}
-            activeOpacity={0.85}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
             className="mt-3 py-4 rounded-[18px] bg-primary items-center"
           >
             <Text className="text-white dark:text-appText font-extrabold">取消</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </BottomSheet>
 
@@ -378,10 +391,10 @@ export default function UserInfoScreen() {
       >
         <View className="px-5 pb-8 gap-3">
           {(['male', 'female', 'unknown'] as const).map((g) => (
-            <TouchableOpacity
+            <Pressable
               key={g}
               onPress={() => { setDraftGender(g); setHasChanges(true); setShowGenderSheet(false); Haptics.selectionAsync(); }}
-              activeOpacity={0.85}
+              style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
               className="py-4 rounded-[18px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder flex-row items-center justify-between px-4"
             >
               <Text className="text-appText dark:text-appDarkText font-extrabold">
@@ -390,7 +403,7 @@ export default function UserInfoScreen() {
               {draftGender === g && (
                 <Ionicons name="checkmark" size={18} color={primary} />
               )}
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </View>
       </BottomSheet>

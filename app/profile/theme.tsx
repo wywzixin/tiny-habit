@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,13 +30,13 @@ export default function ThemeScreen() {
       {/* Header */}
       <View className="px-5 pt-2 pb-4">
         <View className="flex-row items-center justify-between">
-          <TouchableOpacity
+          <Pressable
             onPress={() => router.back()}
-            activeOpacity={0.85}
             className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           >
             <Ionicons name="chevron-back" size={20} color={isDarkMode ? '#d6d3d1' : '#44403c'} />
-          </TouchableOpacity>
+          </Pressable>
 
           <Text className="text-lg font-extrabold text-appText dark:text-appDarkText">
             {t(language, 'theme.title')}
@@ -66,16 +66,18 @@ export default function ThemeScreen() {
               const isSelected = themeColor === option.key;
 
               return (
-                <TouchableOpacity
+                <Pressable
                   key={option.key}
                   onPress={() => handleSelectTheme(option.key)}
-                  activeOpacity={0.88}
                   className={`p-4 rounded-[22px] border flex-row items-center ${
                     isSelected
                       ? 'border-2'
                       : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
                   }`}
-                  style={isSelected ? { borderColor: theme.primary, backgroundColor: theme.primaryLight + '30' } : {}}
+                  style={({ pressed }) => [
+                    isSelected ? { borderColor: theme.primary, backgroundColor: theme.primaryLight + '30' } : {},
+                    { opacity: pressed ? 0.88 : 1 },
+                  ]}
                 >
                   {/* 颜色预览圆点 */}
                   <View
@@ -108,7 +110,7 @@ export default function ThemeScreen() {
                       </Text>
                     </View>
                   )}
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>
@@ -146,15 +148,17 @@ export default function ThemeScreen() {
             </View>
 
             {/* 模拟按钮 */}
-            <TouchableOpacity
-              activeOpacity={0.9}
+            <Pressable
               className="py-3 rounded-[18px] items-center"
-              style={{ backgroundColor: currentTheme.primary }}
+              style={({ pressed }) => [
+                { backgroundColor: currentTheme.primary },
+                { opacity: pressed ? 0.9 : 1 },
+              ]}
             >
               <Text className="text-white font-extrabold">
                 {language === 'zh' ? '完成打卡' : 'Check In'}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
             {/* 模拟标签 */}
             <View className="flex-row gap-2 mt-4">

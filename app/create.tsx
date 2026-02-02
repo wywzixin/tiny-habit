@@ -1,5 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Switch, Platform, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ScrollView, Pressable, TextInput, Switch, Platform, Alert } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -232,6 +232,7 @@ const aiRecommendationsEn = {
 
 export default function CreateScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { editId } = useLocalSearchParams<{ editId?: string }>();
   const editingId = typeof editId === 'string' ? editId : undefined;
 
@@ -758,13 +759,13 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
       {/* Header */}
       <View className="px-5 pt-2 pb-3">
         <View className="flex-row items-center justify-between">
-          <TouchableOpacity
+          <Pressable
             onPress={() => router.back()}
-            activeOpacity={0.85}
             className="px-3 py-2 rounded-full border border-appBorder dark:border-appDarkBorder"
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           >
             <Text className="text-appMuted dark:text-appDarkMuted text-[12px] font-bold">{t(language, 'common.cancel')}</Text>
-          </TouchableOpacity>
+          </Pressable>
 
           <View className="items-center">
             <Text className="text-[16px] font-extrabold text-appText dark:text-appDarkText">
@@ -773,20 +774,20 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
           </View>
 
           {editingId ? (
-            <TouchableOpacity
+            <Pressable
               onPress={handleUpdate}
-              activeOpacity={0.85}
               className={`px-3 py-2 rounded-2xl ${
                 canCreate ? 'bg-appText dark:bg-appDarkText' : 'bg-appBorder dark:bg-appDarkBorder'
               }`}
               disabled={!canCreate}
+              style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
             >
               <Text className={`text-[12px] font-extrabold ${
                 canCreate ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'
               }`}>
                 {t(language, 'common.save')}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           ) : (
             <View className="w-12" />
           )}
@@ -817,21 +818,24 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
               placeholder={t(language, 'create.goalPlaceholder')}
               className="flex-1 ml-2 text-[14px] font-semibold text-appText dark:text-appDarkText"
               placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
+              style={Platform.OS === 'android' ? { padding: 0, height: 24 } : undefined}
             />
-            <TouchableOpacity
+            <Pressable
               onPress={() => setShowLibrary(true)}
-              activeOpacity={0.85}
               className="px-3 py-2 rounded-full flex-row items-center border"
-              style={{
-                borderColor: accent + '40',
-                backgroundColor: isDarkMode ? accent + '22' : accentSoft,
-              }}
+              style={({ pressed }) => [
+                {
+                  borderColor: accent + '40',
+                  backgroundColor: isDarkMode ? accent + '22' : accentSoft,
+                },
+                { opacity: pressed ? 0.85 : 1 },
+              ]}
             >
               <Ionicons name="book-outline" size={14} color={accent} />
               <Text className="text-xs font-bold ml-1" style={{ color: accent }}>
                 {t(language, 'create.library')}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
             </View>
           </View>
         </View>
@@ -840,12 +844,15 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
         <View className="mb-8">
           <View className="flex-row items-center justify-between mb-1">
             <Text className="text-lg font-extrabold text-appText dark:text-appDarkText">{t(language, 'create.behaviorTitle')}</Text>
-            <TouchableOpacity
-              onPress={handleAiRecommendBehaviors}
-              disabled={isAiBehaviorsLoading}
-              activeOpacity={0.85}
-              style={{ opacity: isAiBehaviorsLoading ? 0.6 : 1 }}
-            >
+              <Pressable
+                onPress={handleAiRecommendBehaviors}
+                disabled={isAiBehaviorsLoading}
+                style={({ pressed }) => [
+                  {
+                    opacity: (isAiBehaviorsLoading ? 0.6 : 1) * (pressed ? 0.85 : 1),
+                  },
+                ]}
+              >
               <View
                 className="flex-row items-center px-3 py-1.5 rounded-full border"
                 style={{
@@ -858,7 +865,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                   {t(language, 'create.aiRecommend')}
                 </Text>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">{t(language, 'create.behaviorHint')}</Text>
 
@@ -887,15 +894,15 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                 const difficultyStyle = getDifficultyStyle(item.difficulty);
                 const isSelected = behavior === item.behavior;
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={index}
                     onPress={() => selectAiMicroBehavior(item)}
-                    activeOpacity={0.88}
                     className={`p-3 rounded-[18px] border ${
                       isSelected
                         ? 'bg-primary/10 dark:bg-primary/15 border-primary/25 dark:border-primary/30'
                         : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
                     }`}
+                    style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}
                   >
                     <View className="flex-row items-center">
                       <View className="w-10 h-10 rounded-[14px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
@@ -920,7 +927,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                         </View>
                       )}
                     </View>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
               </View>
@@ -945,12 +952,15 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
         <View className="mb-8">
           <View className="flex-row items-center justify-between mb-1">
             <Text className="text-lg font-extrabold text-appText dark:text-appDarkText">{t(language, 'create.anchorTitle')}</Text>
-            <TouchableOpacity
-              onPress={handleAiRecommendAnchors}
-              disabled={isAiAnchorsLoading}
-              activeOpacity={0.85}
-              style={{ opacity: isAiAnchorsLoading ? 0.6 : 1 }}
-            >
+              <Pressable
+                onPress={handleAiRecommendAnchors}
+                disabled={isAiAnchorsLoading}
+                style={({ pressed }) => [
+                  {
+                    opacity: (isAiAnchorsLoading ? 0.6 : 1) * (pressed ? 0.85 : 1),
+                  },
+                ]}
+              >
               <View
                 className="flex-row items-center px-3 py-1.5 rounded-full border"
                 style={{
@@ -963,7 +973,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                   {t(language, 'create.aiRecommend')}
                 </Text>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">{t(language, 'create.anchorHint')}</Text>
 
@@ -991,15 +1001,15 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
               {aiAnchors.map((item, index) => {
                 const isSelected = anchor === item.anchor;
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={index}
                     onPress={() => selectAiAnchor(item)}
-                    activeOpacity={0.88}
                     className={`p-3 rounded-[18px] border ${
                       isSelected
                         ? 'bg-primary/10 dark:bg-primary/15 border-primary/25 dark:border-primary/30'
                         : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
                     }`}
+                    style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}
                   >
                     <View className="flex-row items-center">
                       <View className="w-10 h-10 rounded-[14px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center mr-3">
@@ -1022,7 +1032,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                         </View>
                       )}
                     </View>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
               </View>
@@ -1049,19 +1059,19 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
           <Text className="text-sm font-semibold text-appMuted dark:text-appDarkMuted mb-3">{t(language, 'create.celebrationHint')}</Text>
           <View className="flex-row flex-wrap gap-2">
             {celebrations.map((item) => (
-              <TouchableOpacity
+              <Pressable
                 key={item.id}
                 onPress={() => { setCelebration(item.text); Haptics.selectionAsync(); }}
-                activeOpacity={0.88}
                 className={`p-3 rounded-[18px] border items-center w-[31%] ${
                   celebration === item.text
                     ? 'bg-primary/10 dark:bg-primary/15 border-primary/25 dark:border-primary/30'
                     : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
                 }`}
+                style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}
               >
                 <Text className="text-2xl mb-1">{item.emoji}</Text>
                 <Text className="text-[11px] font-bold text-appMuted dark:text-appDarkMuted">{item.text}</Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
         </View>
@@ -1075,22 +1085,22 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
               {weekDays.map((day, index) => {
               const backendDay = index + 1; // UI 索引 0-6 对应后端 1-7
               return (
-                <TouchableOpacity
+                <Pressable
                   key={index}
                   onPress={() => toggleDay(index)}
-                  activeOpacity={0.9}
                   className={`w-9 h-9 rounded-full items-center justify-center border ${
                     frequency.includes(backendDay)
                       ? 'bg-primary/15 border-primary/30'
                       : 'bg-appBg dark:bg-appDarkBg border-appBorder dark:border-appDarkBorder'
                   }`}
+                  style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
                 >
                   <Text className={`text-sm font-extrabold ${
                     frequency.includes(backendDay) ? 'text-primary' : 'text-appMuted dark:text-appDarkMuted'
                   }`}>
                     {day}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
             </View>
@@ -1121,10 +1131,10 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
             {reminderEnabled && (
               <View className="mt-3">
                 <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted mb-2">{t(language, 'create.reminderTime')}</Text>
-                <TouchableOpacity
+                <Pressable
                   onPress={() => setShowTimePicker(true)}
-                  activeOpacity={0.85}
                   className="bg-appBg dark:bg-appDarkBg px-4 py-2.5 rounded-[18px] flex-row items-center justify-between border border-appBorder dark:border-appDarkBorder"
+                  style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                 >
                   <View className="flex-row items-center gap-2">
                     <View className="w-8 h-8 rounded-full items-center justify-center bg-primary/10 border border-primary/15">
@@ -1135,7 +1145,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color="#a8a29e" />
-                </TouchableOpacity>
+                </Pressable>
               </View>
             )}
           </View>
@@ -1143,7 +1153,10 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
       </ScrollView>
 
       {/* Bottom Preview & Button */}
-      <View className="absolute bottom-0 left-0 right-0 bg-appBg dark:bg-appDarkBg border-t border-appBorder dark:border-appDarkBorder px-5 pt-3 pb-8">
+      <View
+        className="absolute bottom-0 left-0 right-0 bg-appBg dark:bg-appDarkBg border-t border-appBorder dark:border-appDarkBorder px-5 pt-3"
+        style={{ paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 16) : 32 }}
+      >
         <View className="bg-appCard dark:bg-appDarkCard p-4 rounded-[18px] border border-appBorder dark:border-appDarkBorder mb-3">
           <View className="flex-row items-center justify-between mb-2">
             <Text className="text-[11px] font-extrabold text-appMuted dark:text-appDarkMuted">{t(language, 'create.previewTitle')}</Text>
@@ -1163,18 +1176,18 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
             <Text className={celebration ? 'text-primary font-extrabold' : 'text-appMuted dark:text-appDarkMuted'}>{celebration || '___'}</Text>
           </Text>
         </View>
-        <TouchableOpacity
+        <Pressable
           onPress={handleSubmit}
           disabled={!canCreate}
-          activeOpacity={0.9}
           className={`py-4 rounded-[18px] items-center ${
             canCreate ? 'bg-appText dark:bg-appDarkText' : 'bg-appBorder dark:bg-appDarkBorder'
           }`}
+          style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
         >
           <Text className={`font-extrabold text-base ${canCreate ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'}`}>
             {editingId ? t(language, 'create.saveChanges') : t(language, 'create.confirmCreate')}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <BottomSheet
@@ -1207,36 +1220,36 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                 returnKeyType="search"
               />
               {librarySearch.trim().length > 0 && (
-                <TouchableOpacity
+                <Pressable
                   onPress={() => setLibrarySearch('')}
-                  activeOpacity={0.85}
                   className="w-8 h-8 rounded-full bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center"
+                  style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                 >
                   <Ionicons name="close" size={16} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
-                </TouchableOpacity>
+                </Pressable>
               )}
             </View>
             
             {/* 编辑按钮 - 仅当有用户创建的习惯时显示 */}
             {processedHabits.some(h => h.source === 'user') && (
-              <TouchableOpacity
+              <Pressable
                 onPress={() => {
                   setIsEditMode(!isEditMode);
                   Haptics.selectionAsync();
                 }}
-                activeOpacity={0.85}
                 className={`px-4 py-3 rounded-[18px] border ${
                   isEditMode
                     ? 'bg-primary/10 border-primary/30'
                     : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
                 }`}
+                style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
               >
                 <Text className={`text-[14px] font-bold ${
                   isEditMode ? 'text-primary' : 'text-appText dark:text-appDarkText'
                 }`}>
                   {isEditMode ? t(language, 'common.done') : t(language, 'common.edit')}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
 
@@ -1245,15 +1258,15 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
               {habitCategories.map((cat) => {
                 const active = libraryCategory === cat;
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={cat}
                     onPress={() => { setLibraryCategory(cat); Haptics.selectionAsync(); }}
-                    activeOpacity={0.85}
                     className={`px-4 py-2 rounded-full border ${
                       active
                         ? 'bg-primary/10 border-primary/25'
                         : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
                     }`}
+                    style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                   >
                     <Text
                       className={`text-xs font-bold ${
@@ -1262,7 +1275,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                     >
                       {t(language, `create.category.${cat}`)}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
@@ -1300,15 +1313,15 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                 <Text className="text-xs font-semibold text-appMuted dark:text-appDarkMuted mt-2 text-center leading-relaxed">
                   {t(language, 'create.noHabitHint')}
                 </Text>
-                <TouchableOpacity
+                <Pressable
                   onPress={() => setLibrarySearch('')}
-                  activeOpacity={0.85}
                   className="mt-5 px-4 py-3 rounded-2xl bg-appText dark:bg-appDarkText"
+                  style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                 >
                   <Text className="text-white dark:text-appText font-extrabold">
                     {t(language, 'common.clear')}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             ) : (
               processedHabits.map((habit) => {
@@ -1317,7 +1330,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                 // 使用 source + id 作为唯一 key，避免本地和云端 ID 冲突
                 const uniqueKey = `${habit.source}-${habit.id}`;
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={uniqueKey}
                     onPress={() => {
                       // 编辑模式下不允许选择
@@ -1325,12 +1338,12 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                         selectHabitFromLibrary(habit.name);
                       }
                     }}
-                    activeOpacity={isEditMode ? 1 : 0.92}
                     className={`p-4 rounded-[18px] border flex-row items-center ${
                       selected && !isEditMode
                         ? 'bg-primary/10 dark:bg-primary/15 border-primary/25 dark:border-primary/30'
                         : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
                     } ${isEditMode && !isUserHabit ? 'opacity-50' : ''}`}
+                    style={({ pressed }) => (pressed && !isEditMode ? { opacity: 0.92 } : undefined)}
                   >
                     <View
                       className="w-11 h-11 rounded-[14px] items-center justify-center mr-3 border border-appBorder dark:border-appDarkBorder"
@@ -1358,16 +1371,16 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                     <View className="flex-row items-center gap-2">
                       {/* 编辑模式：显示删除按钮（仅用户习惯） */}
                       {isEditMode && isUserHabit ? (
-                        <TouchableOpacity
+                        <Pressable
                           onPress={(e) => {
                             e.stopPropagation();
                             handleDeleteUserHabit(habit.id, habit.name);
                           }}
-                          activeOpacity={0.85}
                           className="w-10 h-10 rounded-full items-center justify-center border border-red-100 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10"
+                          style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                         >
                           <Ionicons name="trash-outline" size={18} color="#ef4444" />
-                        </TouchableOpacity>
+                        </Pressable>
                       ) : (
                         /* 正常模式：显示添加/选中按钮 */
                         !isEditMode && (
@@ -1385,7 +1398,7 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
                         )
                       )}
                     </View>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })
             )}
@@ -1395,26 +1408,40 @@ const handleDeleteUserHabit = async (id: number | string, name: string) => {
         )}
       </BottomSheet>
 
-      <BottomSheet
-        visible={showTimePicker}
-        title={t(language, 'create.reminderTime')}
-        onClose={() => setShowTimePicker(false)}
-        leftLabel={t(language, 'common.cancel')}
-        rightLabel={t(language, 'common.confirm')}
-        height={300}
-      >
-        <View className="items-center py-2">
-          <DateTimePicker
-            value={reminderTime}
-            mode="time"
-            display="spinner"
-            onChange={onTimeChange}
-            locale={getLocale(language)}
-            style={{ height: 200, width: '100%' }}
-            themeVariant={isDarkMode ? 'dark' : 'light'}
-          />
-        </View>
-      </BottomSheet>
+      {/* Android: 直接渲染 DateTimePicker（系统原生弹窗） */}
+      {Platform.OS === 'android' && showTimePicker && (
+        <DateTimePicker
+          value={reminderTime}
+          mode="time"
+          display="spinner"
+          onChange={onTimeChange}
+          locale={getLocale(language)}
+        />
+      )}
+
+      {/* iOS: 使用 BottomSheet 包裹 */}
+      {Platform.OS === 'ios' && (
+        <BottomSheet
+          visible={showTimePicker}
+          title={t(language, 'create.reminderTime')}
+          onClose={() => setShowTimePicker(false)}
+          leftLabel={t(language, 'common.cancel')}
+          rightLabel={t(language, 'common.confirm')}
+          height={300}
+        >
+          <View className="items-center py-2">
+            <DateTimePicker
+              value={reminderTime}
+              mode="time"
+              display="spinner"
+              onChange={onTimeChange}
+              locale={getLocale(language)}
+              style={{ height: 200, width: '100%' }}
+              themeVariant={isDarkMode ? 'dark' : 'light'}
+            />
+          </View>
+        </BottomSheet>
+      )}
     </SafeAreaView>
   );
 }

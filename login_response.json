@@ -1,0 +1,20 @@
+﻿{
+    "code":  200,
+    "message":  "success",
+    "data":  {
+                 "token":  "eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiIxMiIsImVtYWlsIjoiMTM4MDAxMzgwMDAiLCJpYXQiOjE3Njk4NjE1MDQsImV4cCI6MTc3MDQ2NjMwNH0.16TFOLHi0ZSKw6j6LX5_RRCZ1ERwpiEIXQGqQyAJI4nImmEy2kfrMHO_DTFLJJtZ",
+                 "user":  {
+                              "id":  12,
+                              "username":  "ææºç¨æ·",
+                              "email":  null,
+                              "phone":  "13800138000",
+                              "avatarUrl":  null,
+                              "gender":  "unknown",
+                              "level":  1,
+                              "totalPoints":  0,
+                              "availablePoints":  0,
+                              "createdAt":  "2026-01-31T20:10:41",
+                              "updatedAt":  "2026-01-31T20:10:41"
+                          }
+             }
+}

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Switch, Image } from 'react-native';
+import { View, Text, ScrollView, Pressable, Switch, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -91,14 +91,18 @@ export default function ProfileScreen() {
           <View className="mt-4">
             <View className="bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder rounded-[18px] p-4">
               <View className="flex-row items-center justify-between">
-                <TouchableOpacity
+                <Pressable
                   onPress={() => isLoggedIn && router.push('/profile/user-info')}
-                  activeOpacity={isLoggedIn ? 0.85 : 1}
                   className="flex-row items-center gap-3"
+                  style={({ pressed }) => [{ opacity: pressed ? (isLoggedIn ? 0.85 : 1) : 1 }]}
                 >
                   <View className="w-14 h-14 rounded-[16px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center overflow-hidden">
                     {user?.avatarUrl ? (
-                      <Image source={{ uri: user.avatarUrl }} className="w-full h-full" resizeMode="cover" />
+                      <Image 
+                        source={{ uri: user.avatarUrl }} 
+                        className="w-full h-full" 
+                        resizeMode="cover"
+                      />
                     ) : (
                       <Text className="text-2xl">👤</Text>
                     )}
@@ -125,19 +129,19 @@ export default function ProfileScreen() {
                         <Text className="text-[18px] font-extrabold text-appText dark:text-appDarkText">
                           {t(language, 'profile.notLoggedIn')}
                         </Text>
-                        <TouchableOpacity
+                        <Pressable
                           onPress={() => router.push('/auth/login')}
-                          activeOpacity={0.9}
                           className="mt-2 px-3 py-1.5 rounded-full bg-primary self-start"
+                          style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
                         >
                           <Text className="text-white dark:text-appText text-[12px] font-extrabold">
                             {t(language, 'auth.loginNow')}
                           </Text>
-                        </TouchableOpacity>
+                        </Pressable>
                       </>
                     )}
                   </View>
-                </TouchableOpacity>
+                </Pressable>
                 {isLoggedIn && (
                   <View className="px-3 py-2 rounded-full bg-primary/10 border border-primary/20 flex-row items-center gap-1">
                     <Ionicons name="flash" size={14} color={primary} />
@@ -155,8 +159,8 @@ export default function ProfileScreen() {
           {menuItems.map((item, index) => {
             const enabled = Boolean(item.route || item.onPress);
             return (
-              <TouchableOpacity
-                key={item.label}
+                <Pressable
+                  key={item.label}
                 onPress={() => {
                   if (!enabled) return;
                   if (item.onPress) {
@@ -167,10 +171,10 @@ export default function ProfileScreen() {
                     router.push(item.route as any);
                   }
                 }}
-                activeOpacity={enabled ? 0.85 : 1}
                 className={`px-4 py-4 flex-row items-center justify-between ${
                   index < menuItems.length - 1 ? 'border-b border-appBorder dark:border-appDarkBorder' : ''
                 }`}
+                style={({ pressed }) => [{ opacity: pressed ? (enabled ? 0.85 : 1) : 1 }]}
               >
                 <View className="flex-row items-center gap-3">
                   <View className="w-9 h-9 rounded-[14px] bg-appBg dark:bg-appDarkBg border border-appBorder dark:border-appDarkBorder items-center justify-center">
@@ -195,7 +199,7 @@ export default function ProfileScreen() {
                   )}
                   <Ionicons name="chevron-forward" size={16} color={isDarkMode ? '#44403c' : '#d6d3d1'} />
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
 
@@ -247,10 +251,10 @@ export default function ProfileScreen() {
         onClose={() => setShowLanguageSheet(false)}
       >
         <View className="px-5 pb-8 gap-3">
-          <TouchableOpacity
+          <Pressable
             onPress={() => { setLanguage('zh'); setShowLanguageSheet(false); }}
-            activeOpacity={0.85}
             className="py-4 rounded-[18px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder flex-row items-center justify-between px-4"
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           >
             <Text className="text-appText dark:text-appDarkText font-extrabold">
               {t(language, 'profile.languageZh')}
@@ -258,12 +262,12 @@ export default function ProfileScreen() {
             {language === 'zh' && (
               <Ionicons name="checkmark" size={18} color={primary} />
             )}
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
+          <Pressable
             onPress={() => { setLanguage('en'); setShowLanguageSheet(false); }}
-            activeOpacity={0.85}
             className="py-4 rounded-[18px] bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder flex-row items-center justify-between px-4"
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           >
             <Text className="text-appText dark:text-appDarkText font-extrabold">
               {t(language, 'profile.languageEn')}
@@ -271,7 +275,7 @@ export default function ProfileScreen() {
             {language === 'en' && (
               <Ionicons name="checkmark" size={18} color={primary} />
             )}
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </BottomSheet>
     </SafeAreaView>

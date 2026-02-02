@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -83,13 +83,13 @@ export default function ForgotPasswordScreen() {
         <View className="pb-6">
           <View className="flex-row items-center justify-between">
             <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">忘记密码</Text>
-            <TouchableOpacity
+            <Pressable
               onPress={() => router.back()}
-              activeOpacity={0.85}
               className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 items-center justify-center"
+              style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
             >
               <Ionicons name="close" size={18} color={primary} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -120,9 +120,13 @@ export default function ForgotPasswordScreen() {
               placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
               returnKeyType="next"
             />
-            <TouchableOpacity onPress={() => setShowPassword((v) => !v)} activeOpacity={0.85} className="w-10 h-full items-center justify-center -mr-2">
+            <Pressable
+              onPress={() => setShowPassword((v) => !v)}
+              className="w-10 h-full items-center justify-center -mr-2"
+              style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+            >
               <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <View className="bg-appBg dark:bg-appDarkBg rounded-[18px] border border-appBorder dark:border-appDarkBorder px-4 h-[52px] flex-row items-center">
@@ -138,9 +142,13 @@ export default function ForgotPasswordScreen() {
               returnKeyType="done"
               onSubmitEditing={handleSubmit}
             />
-            <TouchableOpacity onPress={() => setShowPassword((v) => !v)} activeOpacity={0.85} className="w-10 h-full items-center justify-center -mr-2">
+            <Pressable
+              onPress={() => setShowPassword((v) => !v)}
+              className="w-10 h-full items-center justify-center -mr-2"
+              style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+            >
               <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           {error ? (
@@ -151,16 +159,16 @@ export default function ForgotPasswordScreen() {
         </View>
 
         <View className="mt-6">
-          <TouchableOpacity
+          <Pressable
             onPress={handleSubmit}
             disabled={!canSubmit}
-            activeOpacity={0.9}
             className={`py-4 rounded-[18px] items-center ${canSubmit ? 'bg-primary' : 'bg-appBorder dark:bg-appDarkBorder'}`}
+            style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
           >
             <Text className={`text-[14px] font-extrabold ${canSubmit ? 'text-white dark:text-appText' : 'text-appMuted dark:text-appDarkMuted'}`}>
               {loading ? '重置中...' : '重置密码'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>

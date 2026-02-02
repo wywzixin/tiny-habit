@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Linking } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -68,13 +68,13 @@ Tiny Habits v1.0.0
   return (
     <SafeAreaView className="flex-1 bg-appBg dark:bg-appDarkBg">
       <View className="px-5 pt-2 pb-4 flex-row items-center justify-between">
-        <TouchableOpacity
+        <Pressable
           onPress={() => router.back()}
-          activeOpacity={0.85}
+          style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
         >
           <Ionicons name="arrow-back" size={20} color={isDarkMode ? '#d6d3d1' : '#44403c'} />
-        </TouchableOpacity>
+        </Pressable>
         <Text className="text-xl font-extrabold text-appText dark:text-appDarkText">
           {t(language, 'profile.feedback')}
         </Text>
@@ -93,10 +93,10 @@ Tiny Habits v1.0.0
           </Text>
           <View className="flex-row gap-3">
             {feedbackTypes.map((type) => (
-              <TouchableOpacity
+              <Pressable
                 key={type.value}
                 onPress={() => setFeedbackType(type.value as any)}
-                activeOpacity={0.85}
+                style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                 className={`flex-1 py-3 px-3 rounded-2xl border ${
                   feedbackType === type.value
                     ? 'bg-primary border-primary'
@@ -119,7 +119,7 @@ Tiny Habits v1.0.0
                     {type.label}
                   </Text>
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
         </View>
@@ -169,15 +169,15 @@ Tiny Habits v1.0.0
         </View>
 
         {/* 提交按钮 */}
-        <TouchableOpacity
+        <Pressable
           onPress={handleSubmit}
-          activeOpacity={0.85}
+          style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           className="bg-appText dark:bg-appDarkText rounded-2xl py-4"
         >
           <Text className="text-white dark:text-appText text-center text-[15px] font-extrabold">
             {t(language, 'feedback.submit')}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -70,13 +70,13 @@ export default function LoginScreen() {
             <View className="pb-6">
               <View className="flex-row items-center justify-between">
                 <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">{t(language, 'auth.login')}</Text>
-                <TouchableOpacity
+                <Pressable
                   onPress={() => router.back()}
-                  activeOpacity={0.85}
+                  style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                   className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 items-center justify-center"
                 >
                   <Ionicons name="close" size={18} color={primary} />
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
 
@@ -108,13 +108,13 @@ export default function LoginScreen() {
                   returnKeyType="done"
                   onSubmitEditing={handleLogin}
                 />
-                <TouchableOpacity
+                <Pressable
                   onPress={() => setShowPassword((v) => !v)}
-                  activeOpacity={0.85}
+                  style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                   className="w-10 h-full items-center justify-center -mr-2"
                 >
                   <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
-                </TouchableOpacity>
+                </Pressable>
               </View>
 
               <View className="flex-row items-center justify-between">
@@ -125,19 +125,19 @@ export default function LoginScreen() {
                     </Text>
                   ) : null}
                 </View>
-                <TouchableOpacity onPress={() => router.push('/auth/forgot')} activeOpacity={0.85}>
+                <Pressable onPress={() => router.push('/auth/forgot')} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
                   <Text className="text-[12px] font-extrabold" style={{ color: primary }}>
                     {t(language, 'auth.forgotPassword')}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
 
             <View className="mt-6">
-              <TouchableOpacity
+              <Pressable
                 onPress={handleLogin}
                 disabled={!validIdentifier || !validPassword || loginMutation.isPending}
-                activeOpacity={0.9}
+                style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
                 className={`py-4 rounded-[18px] items-center flex-row justify-center ${
                   validIdentifier && validPassword && !loginMutation.isPending 
                     ? 'bg-primary' 
@@ -153,15 +153,15 @@ export default function LoginScreen() {
                     {t(language, 'auth.loginCta')}
                   </Text>
                 )}
-              </TouchableOpacity>
+              </Pressable>
 
               <View className="mt-4 flex-row items-center justify-center">
                 <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted">{t(language, 'auth.noAccount')}</Text>
-                <TouchableOpacity onPress={() => router.push('/auth/register')} activeOpacity={0.85} className="ml-1">
+                <Pressable onPress={() => router.push('/auth/register')} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]} className="ml-1">
                   <Text className="text-[12px] font-extrabold" style={{ color: primary }}>
                     {t(language, 'auth.gotoRegister')}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           </View>
@@ -173,28 +173,28 @@ export default function LoginScreen() {
               <View className="flex-1 h-px bg-appBorder dark:bg-appDarkBorder" />
             </View>
             <View className="mt-4 flex-row items-center justify-center gap-4">
-              <TouchableOpacity
+              <Pressable
                 onPress={() => handleThirdPartyLogin('QQ')}
-                activeOpacity={0.85}
+                style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                 className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 items-center justify-center"
               >
                 <FontAwesome name="qq" size={22} color={isDarkMode ? '#f5f5f4' : '#0c0a09'} />
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 onPress={() => handleThirdPartyLogin('微博')}
-                activeOpacity={0.85}
+                style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                 className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 items-center justify-center"
               >
                 <FontAwesome name="weibo" size={22} color="#e6162d" />
-              </TouchableOpacity>
+              </Pressable>
               {Platform.OS === 'ios' && (
-                <TouchableOpacity
+                <Pressable
                   onPress={() => handleThirdPartyLogin('Apple')}
-                  activeOpacity={0.85}
+                  style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                   className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 items-center justify-center"
                 >
                   <Ionicons name="logo-apple" size={22} color={isDarkMode ? '#f5f5f4' : '#0c0a09'} />
-                </TouchableOpacity>
+                </Pressable>
               )}
             </View>
           </View>

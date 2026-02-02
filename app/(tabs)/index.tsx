@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState, useCallback, useEffect, useMemo } from 'react';
@@ -251,15 +251,15 @@ export default function HomeScreen() {
               <Text className="text-appMuted dark:text-appDarkMuted text-center leading-relaxed">
                 {t(language, 'home.noToday')}
               </Text>
-              <TouchableOpacity
+              <Pressable
                 onPress={() => router.push('/create')}
-                activeOpacity={0.85}
+                style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                 className="mt-5 bg-appText dark:bg-appDarkText px-4 py-3 rounded-2xl"
               >
                 <Text className="text-white dark:text-appText font-bold">
                   {t(language, 'home.createFirst')}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ) : (
             todayBehaviors.map((behavior) => (

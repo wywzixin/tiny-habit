@@ -1,5 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ScrollView, Pressable, TextInput, Alert, Platform } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +16,7 @@ const icons = ['📚', '🎬', '🎮', '☕', '🍰', '🎁', '✈️', '🎸', 
 
 export default function RewardsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
   const isDarkMode = useAuthStore((s) => s.isDarkMode);
@@ -157,13 +158,13 @@ export default function RewardsScreen() {
               </Text>
             </View>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => router.back()}
-              activeOpacity={0.85}
+              style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
               className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 items-center justify-center"
             >
               <Ionicons name="arrow-back" size={18} color={primary} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <View className="mt-4">
@@ -200,16 +201,16 @@ export default function RewardsScreen() {
           <Text className="text-base font-extrabold text-appText dark:text-appDarkText">
             {t(language, 'rewards.myRewards')}
           </Text>
-          <TouchableOpacity
+          <Pressable
             onPress={() => setShowModal(true)}
-            activeOpacity={0.85}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
             className="flex-row items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/25"
           >
             <Ionicons name="add" size={16} color={primary} />
             <Text className="text-[12px] font-extrabold" style={{ color: primary }}>
               {t(language, 'rewards.create')}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {rewards.length === 0 ? (
@@ -264,10 +265,10 @@ export default function RewardsScreen() {
                         </Text>
                       </View>
                     ) : (
-                      <TouchableOpacity
+                      <Pressable
                         onPress={() => handleRedeem(reward.id, reward.cost)}
                         disabled={!canRedeem}
-                        activeOpacity={0.85}
+                        style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                         className={`px-4 py-2 rounded-full ${
                           canRedeem ? 'bg-primary' : 'bg-appBorder dark:bg-appDarkBorder'
                         }`}
@@ -277,7 +278,7 @@ export default function RewardsScreen() {
                         }`}>
                           {t(language, 'rewards.redeem')}
                         </Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     )}
                   </View>
                 </View>
@@ -292,7 +293,7 @@ export default function RewardsScreen() {
         title={t(language, 'rewards.create')}
         onClose={() => setShowModal(false)}
       >
-        <View className="px-5 pb-8">
+        <View className="px-5" style={{ paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 16) : 32 }}>
           <Text className="text-xs font-bold text-appMuted dark:text-appDarkMuted mb-2">{t(language, 'rewards.rewardName')}</Text>
           <TextInput
             value={name}
@@ -315,10 +316,10 @@ export default function RewardsScreen() {
           <Text className="text-xs font-bold text-appMuted dark:text-appDarkMuted mb-2">{t(language, 'rewards.selectIcon')}</Text>
           <View className="flex-row flex-wrap gap-2 mb-5">
             {icons.map((icon) => (
-              <TouchableOpacity
+              <Pressable
                 key={icon}
                 onPress={() => setSelectedIcon(icon)}
-                activeOpacity={0.85}
+                style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                 className={`w-11 h-11 rounded-[16px] items-center justify-center border ${
                   selectedIcon === icon
                     ? 'border-primary bg-primary/10 dark:bg-primary/15'
@@ -326,17 +327,17 @@ export default function RewardsScreen() {
                 }`}
               >
                 <Text className="text-[20px]">{icon}</Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
 
-          <TouchableOpacity
+          <Pressable
             onPress={handleAddReward}
-            activeOpacity={0.9}
+            style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
             className="bg-primary py-4 rounded-[18px] items-center"
           >
             <Text className="text-white dark:text-appText font-extrabold">{t(language, 'common.confirm')}</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </BottomSheet>
     </SafeAreaView>

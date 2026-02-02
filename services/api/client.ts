@@ -2,7 +2,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../../stores/authStore';
 
 // API 基础配置
-export const API_BASE_URL = 'http://192.168.10.57:8081';
+export const API_BASE_URL = 'http://43.133.80.64';
 
 // 统一响应格式
 export interface ApiResponse<T = any> {

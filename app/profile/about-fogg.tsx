@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, ScrollView, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,13 +20,13 @@ export default function AboutFoggScreen() {
       {/* Header */}
       <View className="px-5 pt-2 pb-4">
         <View className="flex-row items-center justify-between">
-          <TouchableOpacity
+          <Pressable
             onPress={() => router.back()}
-            activeOpacity={0.85}
             className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           >
             <Ionicons name="chevron-back" size={20} color={isDarkMode ? '#d6d3d1' : '#44403c'} />
-          </TouchableOpacity>
+          </Pressable>
 
           <Text className="text-lg font-extrabold text-appText dark:text-appDarkText">
             {t(language, 'fogg.title')}
@@ -288,11 +288,13 @@ export default function AboutFoggScreen() {
         </View>
 
         {/* 了解更多 */}
-        <TouchableOpacity
+        <Pressable
           onPress={openLearnMore}
-          activeOpacity={0.9}
           className="py-4 rounded-[22px] items-center mb-4"
-          style={{ backgroundColor: currentTheme.primary }}
+          style={({ pressed }) => [
+            { backgroundColor: currentTheme.primary },
+            { opacity: pressed ? 0.9 : 1 },
+          ]}
         >
           <View className="flex-row items-center gap-2">
             <Ionicons name="globe-outline" size={18} color="white" />
@@ -300,7 +302,7 @@ export default function AboutFoggScreen() {
               {t(language, 'fogg.learnMore')}
             </Text>
           </View>
-        </TouchableOpacity>
+        </Pressable>
 
         {/* 作者信息 */}
         <Text className="text-center text-[11px] text-appMuted dark:text-appDarkMuted leading-relaxed">

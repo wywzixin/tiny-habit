@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -98,15 +98,16 @@ export default function DiscoverScreen() {
               className="flex-1 ml-2 text-[14px] font-semibold text-appText dark:text-appDarkText"
               placeholderTextColor={isDarkMode ? '#a8a29e' : '#a8a29e'}
               returnKeyType="search"
+              style={Platform.OS === 'android' ? { padding: 0, height: 24 } : undefined}
             />
             {search.length > 0 && (
-              <TouchableOpacity
+              <Pressable
                 onPress={() => setSearch('')}
-                activeOpacity={0.85}
+                style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                 className="w-8 h-8 rounded-full bg-appCard dark:bg-appDarkCard items-center justify-center border border-appBorder dark:border-appDarkBorder"
               >
                 <Ionicons name="close" size={16} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
 
@@ -119,10 +120,10 @@ export default function DiscoverScreen() {
               {categoryOptions.map((category) => {
                 const active = selectedCategory === category.value;
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={category.value}
                     onPress={() => handleCategoryChange(category.value)}
-                    activeOpacity={0.85}
+                    style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                     className={`px-4 py-2 rounded-full border ${
                       active
                         ? 'bg-primary/10 border-primary/25'
@@ -136,7 +137,7 @@ export default function DiscoverScreen() {
                     >
                       {category.label}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
@@ -219,9 +220,9 @@ export default function DiscoverScreen() {
                     </Text>
                   </View>
 
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => handleAdd(recipe.id)}
-                    activeOpacity={0.85}
+                    style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                     disabled={isAdded || addFromTemplateMutation.isPending}
                     className={`w-9 h-9 rounded-full items-center justify-center border ${
                       isAdded
@@ -238,7 +239,7 @@ export default function DiscoverScreen() {
                         color={isAdded ? 'white' : primary}
                       />
                     )}
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
               );
             })

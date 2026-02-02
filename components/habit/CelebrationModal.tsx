@@ -1,8 +1,10 @@
-import { View, Text, Modal, Animated } from 'react-native';
+import { View, Text, Modal, Animated, StyleSheet, Pressable } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../stores';
 import { themeColors } from '../../stores/authStore';
+// TODO: Skia 烟花效果需要 Development Build，Expo Go 不支持
+// import { FireworksShader } from '../ui/FireworksShader';
 
 interface CelebrationModalProps {
   visible: boolean;
@@ -146,6 +148,15 @@ export function CelebrationModal({ visible, celebration, onClose }: CelebrationM
 
   return (
     <Modal visible={visible} transparent animationType="fade">
+      <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
+        {/* TODO: Skia 烟花效果需要 Development Build，Expo Go 不支持
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <FireworksShader />
+        </View>
+        */}
+      </Pressable>
+
+      {/* 庆祝卡片 - 暂时注释，只显示烟花
       <View className="flex-1 bg-black/40 items-center justify-center px-6">
         <Animated.View
           style={{ transform: [{ scale: cardScale }] }}
@@ -254,6 +265,7 @@ export function CelebrationModal({ visible, celebration, onClose }: CelebrationM
           </View>
         </Animated.View>
       </View>
+      */}
     </Modal>
   );
 }

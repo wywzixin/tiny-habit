@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MicroBehavior } from '../../types';
 import { useAuthStore } from '../../stores';
@@ -18,14 +18,14 @@ export function HabitCard({ behavior, isChecked, onCheck, onPress }: HabitCardPr
   const currentTheme = themeColors[themeColor];
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
-      activeOpacity={0.92}
       className={`p-4 rounded-[22px] border flex-row items-center ${
         isChecked
           ? 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
           : 'bg-appCard dark:bg-appDarkCard border-appBorder dark:border-appDarkBorder'
       }`}
+      style={({ pressed }) => [{ opacity: pressed ? 0.92 : 1 }]}
     >
       <View
         className="w-12 h-12 rounded-[16px] items-center justify-center mr-3 border"
@@ -66,25 +66,23 @@ export function HabitCard({ behavior, isChecked, onCheck, onPress }: HabitCardPr
         </View>
       </View>
 
-      <TouchableOpacity
+      <Pressable
         onPress={(e) => {
           e.stopPropagation();
           onCheck();
         }}
-        activeOpacity={0.85}
         className="w-9 h-9 rounded-full items-center justify-center border"
-        style={
-          isChecked
-            ? { backgroundColor: currentTheme.primary, borderColor: currentTheme.primary }
-            : undefined
-        }
+        style={({ pressed }) => [
+          isChecked ? { backgroundColor: currentTheme.primary, borderColor: currentTheme.primary } : undefined,
+          { opacity: pressed ? 0.85 : 1 },
+        ]}
       >
         {isChecked ? (
           <Ionicons name="checkmark" size={18} color="white" />
         ) : (
           <Ionicons name="ellipse-outline" size={18} color="#a8a29e" />
         )}
-      </TouchableOpacity>
-    </TouchableOpacity>
+      </Pressable>
+    </Pressable>
   );
 }

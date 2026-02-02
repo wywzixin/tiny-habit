@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -65,9 +65,9 @@ export default function RegisterScreen() {
         <View className="pt-2 pb-4">
           <View className="flex-row items-center justify-between">
             <Text className="text-2xl font-extrabold text-appText dark:text-appDarkText">{t(language, 'auth.register')}</Text>
-            <TouchableOpacity onPress={() => router.back()} activeOpacity={0.85} className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 items-center justify-center">
+            <Pressable onPress={() => router.back()} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]} className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 items-center justify-center">
               <Ionicons name="arrow-back" size={18} color={primary} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -110,9 +110,9 @@ export default function RegisterScreen() {
               returnKeyType="done"
               onSubmitEditing={handleRegister}
             />
-            <TouchableOpacity onPress={() => setShowPassword((v) => !v)} activeOpacity={0.85} className="w-10 h-full items-center justify-center -mr-2">
+            <Pressable onPress={() => setShowPassword((v) => !v)} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]} className="w-10 h-full items-center justify-center -mr-2">
               <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color={isDarkMode ? '#a8a29e' : '#78716c'} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
           
           {registerMutation.isError && (
@@ -123,10 +123,10 @@ export default function RegisterScreen() {
         </View>
 
         <View className="mt-5">
-          <TouchableOpacity
+          <Pressable
             onPress={handleRegister}
             disabled={!validUsername || !validIdentifier || !validPassword || registerMutation.isPending}
-            activeOpacity={0.9}
+            style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
             className={`py-4 rounded-[18px] items-center flex-row justify-center ${
               validUsername && validIdentifier && validPassword && !registerMutation.isPending
                 ? 'bg-primary' 
@@ -144,13 +144,13 @@ export default function RegisterScreen() {
                 {t(language, 'auth.registerCta')}
               </Text>
             )}
-          </TouchableOpacity>
+          </Pressable>
 
           <View className="mt-4 flex-row items-center justify-center">
             <Text className="text-[12px] font-semibold text-appMuted dark:text-appDarkMuted">{t(language, 'auth.hasAccount')}</Text>
-            <TouchableOpacity onPress={() => router.replace('/auth/login')} activeOpacity={0.85} className="ml-1">
+            <Pressable onPress={() => router.replace('/auth/login')} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]} className="ml-1">
               <Text className="text-[12px] font-extrabold" style={{ color: primary }}>{t(language, 'auth.gotoLogin')}</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </ScrollView>

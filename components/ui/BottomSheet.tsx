@@ -1,4 +1,4 @@
-import { Modal, View, Text, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { Modal, View, Text, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../stores';
 
@@ -48,19 +48,22 @@ export function BottomSheet({
               <View className="px-4 pt-3 pb-4 flex-row items-center justify-between">
                 <View className="w-16">
                   {leftLabel ? (
-                    <TouchableOpacity onPress={onLeftPress || onClose} activeOpacity={0.85}>
+                    <Pressable
+                      onPress={onLeftPress || onClose}
+                      style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+                    >
                       <Text className="text-[13px] font-extrabold text-appMuted dark:text-appDarkMuted">
                         {leftLabel}
                       </Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   ) : (
-                    <TouchableOpacity
+                    <Pressable
                       onPress={onClose}
-                      activeOpacity={0.85}
                       className="w-10 h-10 rounded-2xl bg-appCard dark:bg-appDarkCard border border-appBorder dark:border-appDarkBorder items-center justify-center"
+                      style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
                     >
                       <Ionicons name="close" size={18} color={isDarkMode ? '#d6d3d1' : '#78716c'} />
-                    </TouchableOpacity>
+                    </Pressable>
                   )}
                 </View>
 
@@ -74,9 +77,12 @@ export function BottomSheet({
 
                 <View className="w-16 items-end">
                   {rightLabel ? (
-                    <TouchableOpacity onPress={onRightPress || onClose} activeOpacity={0.85}>
+                    <Pressable
+                      onPress={onRightPress || onClose}
+                      style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+                    >
                       <Text className="text-[13px] font-extrabold text-primary">{rightLabel}</Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   ) : (
                     <View className="w-10 h-10" />
                   )}

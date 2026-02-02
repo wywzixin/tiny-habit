@@ -1,4 +1,4 @@
-import { View, Text, Modal, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, Modal, Pressable, Animated } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { useAuthStore } from '../../stores';
 
@@ -61,27 +61,31 @@ export function ConfirmModal({
             </Text>
 
             <View className="flex-row gap-3 mt-6">
-              <TouchableOpacity
+              <Pressable
                 onPress={onCancel}
-                activeOpacity={0.85}
                 className="flex-1 rounded-full py-3"
-                style={{ backgroundColor: isDarkMode ? 'rgba(82,82,91,0.65)' : '#D1D5DB' }}
+                style={({ pressed }) => [
+                  { backgroundColor: isDarkMode ? 'rgba(82,82,91,0.65)' : '#D1D5DB' },
+                  { opacity: pressed ? 0.85 : 1 },
+                ]}
               >
                 <Text className="text-[15px] font-bold text-appText dark:text-appDarkText text-center">
                   {cancelText}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
 
-              <TouchableOpacity
+              <Pressable
                 onPress={onConfirm}
-                activeOpacity={0.85}
                 className="flex-1 rounded-full py-3"
-                style={{ backgroundColor: isDarkMode ? 'rgba(82,82,91,0.65)' : '#D1D5DB' }}
+                style={({ pressed }) => [
+                  { backgroundColor: isDarkMode ? 'rgba(82,82,91,0.65)' : '#D1D5DB' },
+                  { opacity: pressed ? 0.85 : 1 },
+                ]}
               >
                 <Text className="text-[15px] font-bold text-red-500 text-center">
                   {confirmText}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </Animated.View>
